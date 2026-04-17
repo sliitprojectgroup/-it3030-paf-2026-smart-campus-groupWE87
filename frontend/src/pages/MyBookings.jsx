@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { getUserBookings } from '../services/api';
+import { getUserBookings, cancelBooking } from '../services/api';
 
 export default function MyBookings() {
     const [bookings, setBookings] = useState([]);
@@ -23,6 +23,17 @@ export default function MyBookings() {
 
         fetchBookings();
     }, []);
+
+    const handleCancel = async (id) => {
+        if (!window.confirm('Are you sure you want to cancel this booking?')) return;
+        try {
+            await cancelBooking(id);
+            setBookings(bookings.map(b => (b.id === id || b.bookingId === id) ? { ...b, status: 'CANCELLED' } : b));
+            alert('Booking cancelled successfully.');
+        } catch (err) {
+            alert(err.response?.data?.message || 'Failed to cancel booking. Please try again.');
+        }
+    };
 
     const getStatusStyle = (status) => {
         switch (status) {
@@ -110,7 +121,9 @@ export default function MyBookings() {
                                     </div>
                                     <div className="col-span-2 flex items-center justify-end gap-2 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
                                         {booking.status === 'PENDING' && (
-                                            <button className="text-xs font-body font-semibold text-error hover:bg-error-container/50 px-3 py-1.5 rounded-lg transition-colors">
+                                            <button 
+                                                onClick={() => handleCancel(booking.id || booking.bookingId)}
+                                                className="text-xs font-body font-semibold text-error hover:bg-error-container/50 px-3 py-1.5 rounded-lg transition-colors">
                                                 Cancel
                                             </button>
                                         )}

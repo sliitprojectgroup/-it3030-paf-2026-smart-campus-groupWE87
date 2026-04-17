@@ -5,6 +5,9 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+
 @Entity
 @Table(name = "tickets")
 @Data
@@ -17,9 +20,11 @@ public class Ticket {
     private Long id;
 
     @Column(nullable = false)
+    @NotNull
     private Long resourceId;
 
     @Column(nullable = false)
+    @NotBlank
     private String description;
 
     @Column(nullable = false)

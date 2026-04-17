@@ -1,6 +1,24 @@
 import { Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { getUserBookings } from '../services/api';
 
 export default function Dashboard() {
+    const [stats, setStats] = useState({ approved: 0, pending: 0, total: 0 });
+
+    useEffect(() => {
+        const fetchStats = async () => {
+            try {
+                // Hardcoded user 1
+                const bookings = await getUserBookings(1);
+                const approved = bookings.filter(b => b.status === 'APPROVED').length;
+                const pending = bookings.filter(b => b.status === 'PENDING').length;
+                setStats({ approved, pending, total: bookings.length });
+            } catch (error) {
+                console.error("Failed to load dashboard stats", error);
+            }
+        };
+        fetchStats();
+    }, []);
     return (
         <div className="px-4 md:px-8 max-w-7xl mx-auto flex flex-col gap-10 pb-12">
             {/* Hero / Welcome Section */}
@@ -32,7 +50,7 @@ export default function Dashboard() {
                                         </div>
                                         <span className="font-label text-sm font-medium text-on-surface-variant">Approved</span>
                                     </div>
-                                    <div className="font-headline text-4xl font-extrabold text-primary mb-1">1</div>
+                                    <div className="font-headline text-4xl font-extrabold text-primary mb-1">{stats.approved}</div>
                                     <p className="font-body text-sm text-on-surface-variant">Reservations confirmed</p>
                                 </div>
                                 <span className="material-symbols-outlined text-outline-variant group-hover:text-primary transition-colors">arrow_forward</span>
@@ -47,7 +65,7 @@ export default function Dashboard() {
                                         </div>
                                         <span className="font-label text-sm font-medium text-on-surface-variant">Pending</span>
                                     </div>
-                                    <div className="font-headline text-4xl font-extrabold text-primary mb-1">1</div>
+                                    <div className="font-headline text-4xl font-extrabold text-primary mb-1">{stats.pending}</div>
                                     <p className="font-body text-sm text-on-surface-variant">Awaiting approval</p>
                                 </div>
                                 <span className="material-symbols-outlined text-outline-variant group-hover:text-primary transition-colors">arrow_forward</span>
@@ -70,7 +88,7 @@ export default function Dashboard() {
                                 <span className="material-symbols-outlined absolute -bottom-4 -right-4 text-7xl text-surface-container-highest/50 pointer-events-none group-hover:text-surface-container-highest transition-colors">meeting_room</span>
                             </Link>
 
-                            <button className="relative overflow-hidden rounded-xl bg-surface-container-low hover:bg-surface-container transition-colors group text-left border border-transparent hover:border-outline-variant/20 p-6 flex flex-col gap-4">
+                            <Link to="/report-issue" className="relative overflow-hidden rounded-xl bg-surface-container-low hover:bg-surface-container transition-colors group text-left border border-transparent hover:border-outline-variant/20 p-6 flex flex-col gap-4">
                                 <div className="w-12 h-12 rounded-xl bg-surface-container-lowest shadow-sm flex items-center justify-center text-primary group-hover:scale-105 transition-transform">
                                     <span className="material-symbols-outlined text-2xl">report_problem</span>
                                 </div>
@@ -79,7 +97,7 @@ export default function Dashboard() {
                                     <p className="font-body text-sm text-on-surface-variant">Log maintenance or IT requests.</p>
                                 </div>
                                 <span className="material-symbols-outlined absolute -bottom-4 -right-4 text-7xl text-surface-container-highest/50 pointer-events-none group-hover:text-surface-container-highest transition-colors">report_problem</span>
-                            </button>
+                            </Link>
                         </div>
                     </section>
                 </div>
