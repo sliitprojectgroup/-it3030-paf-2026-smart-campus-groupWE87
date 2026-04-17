@@ -49,7 +49,11 @@ export default function CreateBooking() {
                 navigate('/my-bookings');
             }, 1500);
         } catch (err) {
-            setError(err.response?.data?.message || 'Failed to create booking. Please check your inputs and try again.');
+            if (err.response?.status === 409) {
+                setError('Time slot already booked');
+            } else {
+                setError('Something went wrong');
+            }
         } finally {
             setLoading(false);
         }

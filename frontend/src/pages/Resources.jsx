@@ -94,13 +94,13 @@ export default function Resources() {
                                         <span className="material-symbols-outlined text-[28px]">{getIconForType(item.type)}</span>
                                     </div>
                                     <span className={`px-3 py-1 rounded-full font-label text-xs font-semibold flex items-center gap-1
-                                        ${item.status === 'AVAILABLE' ? 'bg-secondary/10 text-secondary' : 'bg-tertiary-fixed-dim/20 text-on-tertiary-fixed'}`}>
-                                        <span className={`w-1.5 h-1.5 rounded-full ${item.status === 'AVAILABLE' ? 'bg-secondary' : 'bg-tertiary-fixed-dim'}`}></span> 
-                                        {item.status === 'AVAILABLE' ? 'Available' : 'Unavailable'}
+                                        ${item.status === 'ACTIVE' || item.status === 'AVAILABLE' ? 'bg-secondary/10 text-secondary' : 'bg-tertiary-fixed-dim/20 text-on-tertiary-fixed'}`}>
+                                        <span className={`w-1.5 h-1.5 rounded-full ${item.status === 'ACTIVE' || item.status === 'AVAILABLE' ? 'bg-secondary' : 'bg-tertiary-fixed-dim'}`}></span> 
+                                        {item.status === 'ACTIVE' || item.status === 'AVAILABLE' ? 'Available' : 'Unavailable'}
                                     </span>
                                 </div>
                                 <h3 className="font-headline text-xl font-bold text-primary mb-1">{item.name}</h3>
-                                <p className="text-on-surface-variant text-sm mb-4 font-body">{item.location || 'Campus Asset'}</p>
+                                <p className="text-on-surface-variant text-sm mb-4 font-body">Campus Resource</p>
                                 
                                 <div className="flex items-center gap-4 text-sm font-medium text-on-surface-variant mb-8 font-body">
                                     {item.capacity && (
@@ -118,7 +118,7 @@ export default function Resources() {
                             <Link 
                                 to={`/book/${item.id}`}
                                 className={`block text-center w-full py-3 rounded-xl font-semibold text-sm transition-colors font-body
-                                    ${item.status === 'AVAILABLE' 
+                                    ${item.status === 'ACTIVE' || item.status === 'AVAILABLE' 
                                         ? 'bg-surface-container text-primary hover:bg-primary hover:text-on-primary' 
                                         : 'border border-outline-variant text-primary hover:bg-surface-container pointer-events-none opacity-50'}`}
                             >
