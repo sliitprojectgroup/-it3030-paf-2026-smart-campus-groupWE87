@@ -1,56 +1,70 @@
 import { NavLink } from 'react-router-dom';
-import { Home, Compass, BookOpen, Calendar, Shield } from 'lucide-react';
 
-const Sidebar = () => {
-  return (
-    <div className="sidebar glass-panel">
-      <div className="sidebar-logo">
-        <Compass size={28} color="#3b82f6" />
-        <span>SmartHub</span>
-      </div>
+export default function Sidebar({ isOpen, onClose }) {
+    const navItems = [
+        { name: 'Dashboard', icon: 'dashboard', path: '/' },
+        { name: 'Resources', icon: 'inventory_2', path: '/resources' },
+        { name: 'Bookings', icon: 'event_available', path: '/my-bookings' },
+        { name: 'Admin', icon: 'admin_panel_settings', path: '/admin' }
+    ];
 
-      <nav style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-        <NavLink 
-          to="/" 
-          className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
-          end
-        >
-          <Home size={20} />
-          Dashboard
-        </NavLink>
-        
-        <NavLink 
-          to="/resources" 
-          className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
-        >
-          <BookOpen size={20} />
-          Resources
-        </NavLink>
-        
-        <NavLink 
-          to="/my-bookings" 
-          className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
-        >
-          <Calendar size={20} />
-          My Bookings
-        </NavLink>
+    return (
+        <>
+            {/* Mobile Overlay */}
+            {isOpen && (
+                <div 
+                    className="fixed inset-0 bg-black/50 z-40 md:hidden" 
+                    onClick={onClose}
+                ></div>
+            )}
 
-        <div style={{ margin: '1rem 0', borderBottom: '1px solid var(--border-color)' }}></div>
-        
-        <div style={{ padding: '0 1rem', fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '0.5rem', fontWeight: '600' }}>
-          Management
-        </div>
+            {/* Sidebar Container */}
+            <nav className={`
+                h-screen w-64 fixed left-0 top-0 bg-surface-container-low flex flex-col p-4 gap-y-2 z-50 
+                border-r border-surface-container-highest transition-transform duration-300
+                ${isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+            `}>
+                <div className="mb-4 px-4 py-4 flex items-center justify-between">
+                    <div>
+                        <h1 className="font-headline font-extrabold text-primary text-xl">Architect Hub</h1>
+                        <p className="font-body text-xs text-on-surface-variant mt-1">Smart Campus</p>
+                    </div>
+                    <button className="md:hidden text-primary" onClick={onClose}>
+                        <span className="material-symbols-outlined">close</span>
+                    </button>
+                </div>
 
-        <NavLink 
-          to="/admin" 
-          className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
-        >
-          <Shield size={20} />
-          Admin Panel
-        </NavLink>
-      </nav>
-    </div>
-  );
-};
+                <div className="flex-grow flex flex-col gap-y-1">
+                    {navItems.map((item) => (
+                        <NavLink
+                            key={item.name}
+                            to={item.path}
+                            onClick={() => onClose()} // close menu on mobile
+                            className={({ isActive }) => `
+                                flex items-center gap-3 px-4 py-3 rounded-xl font-body text-sm transition-all
+                                ${isActive ? 'bg-surface-container-lowest text-primary shadow-sm font-semibold translate-x-1' 
+                                          : 'text-on-surface-variant hover:bg-surface-container-high hover:text-primary font-medium'}
+                            `}
+                        >
+                            {({ isActive }) => (
+                                <>
+                                    <span className={`material-symbols-outlined ${isActive ? 'fill' : ''}`}>
+                                        {item.icon}
+                                    </span>
+                                    <span>{item.name}</span>
+                                </>
+                            )}
+                        </NavLink>
+                    ))}
+                </div>
 
-export default Sidebar;
+                <div className="mt-auto px-2 pb-4">
+                    <NavLink to="/book" onClick={() => onClose()} className="w-full flex items-center justify-center gap-2 bg-primary text-on-primary py-3 rounded-xl font-body font-medium text-sm hover:bg-primary-container transition-colors shadow-sm">
+                        <span className="material-symbols-outlined text-[18px]">add</span>
+                        New Request
+                    </NavLink>
+                </div>
+            </nav>
+        </>
+    );
+}
