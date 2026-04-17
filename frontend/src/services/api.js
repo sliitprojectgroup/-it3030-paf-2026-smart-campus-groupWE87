@@ -1,52 +1,30 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'http://localhost:8080/api';
-
 const api = axios.create({
-  baseURL: API_BASE_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
+    baseURL: 'http://localhost:8080/api',
+    headers: {
+        'Content-Type': 'application/json',
+    },
 });
 
-export const getResources = async () => {
-  const response = await api.get('/resources');
-  return response.data;
-};
+// Basic Error Handling Interceptor
+api.interceptors.response.use(
+    (response) => response.data,
+    (error) => {
+        console.error('API Error:', error.response || error.message);
+        // You could hook this into a global toast/alert context here if available
+        return Promise.reject(error);
+    }
+);
 
-export const getResourceById = async (id) => {
-  const response = await api.get(`/resources/${id}`);
-  return response.data;
-};
+// Resources
+export const getResources = () => api.get('/resources');
 
-export const createBooking = async (bookingData) => {
-  const response = await api.post('/bookings', bookingData);
-  return response.data;
-};
-
-export const getUserBookings = async (userId) => {
-  const response = await api.get(`/bookings/user/${userId}`);
-  return response.data;
-};
-
-export const getAllBookings = async () => {
-  const response = await api.get('/bookings');
-  return response.data;
-};
-
-export const approveBooking = async (id) => {
-  const response = await api.put(`/bookings/${id}/approve`);
-  return response.data;
-};
-
-export const rejectBooking = async (id, reason) => {
-  const response = await api.put(`/bookings/${id}/reject?reason=${encodeURIComponent(reason)}`);
-  return response.data;
-};
-
-export const cancelBooking = async (id) => {
-  const response = await api.put(`/bookings/${id}/cancel`);
-  return response.data;
-};
+// Bookings
+export const createBooking = (data) => api.post('/bookings', data);
+export const getUserBookings = (userId) => api.get(`/bookings/user/${userId}`);
+export const getAllBookings = () => api.get('/bookings');
+export const approveBooking = (id) => api.put(`/bookings/${id}/approve`);
+export const rejectBooking = (id, reason) => api.put(`/bookings/${id}/reject`, null, { params: { reason } });
 
 export default api;
