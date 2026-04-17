@@ -1,4 +1,4 @@
-package com.we87.paf;
+package com.sliit.paf;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
