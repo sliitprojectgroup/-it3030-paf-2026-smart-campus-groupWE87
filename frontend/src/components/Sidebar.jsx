@@ -5,7 +5,8 @@ export default function Sidebar({ isOpen, onClose }) {
         { name: 'Dashboard', icon: 'dashboard', path: '/' },
         { name: 'Resources', icon: 'inventory_2', path: '/resources' },
         { name: 'Bookings', icon: 'event_available', path: '/my-bookings' },
-        { name: 'Admin', icon: 'admin_panel_settings', path: '/admin' }
+        { name: 'Admin Ops', icon: 'admin_panel_settings', path: '/admin' },
+        { name: 'Admin Resources', icon: 'settings_applications', path: '/admin-resources' }
     ];
 
     return (

@@ -26,4 +26,18 @@ public class ResourceService {
     public Resource createResource(Resource resource) {
         return resourceRepository.save(resource);
     }
+
+    public Resource updateResource(Long id, Resource resourceDetails) {
+        Resource resource = getResourceById(id);
+        resource.setName(resourceDetails.getName());
+        resource.setType(resourceDetails.getType());
+        resource.setCapacity(resourceDetails.getCapacity());
+        resource.setStatus(resourceDetails.getStatus());
+        return resourceRepository.save(resource);
+    }
+
+    public void deleteResource(Long id) {
+        Resource resource = getResourceById(id);
+        resourceRepository.delete(resource);
+    }
 }

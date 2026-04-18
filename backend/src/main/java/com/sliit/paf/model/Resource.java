@@ -32,6 +32,7 @@ public class Resource {
     private int capacity;
 
     @Column(nullable = false)
+    @jakarta.validation.constraints.Pattern(regexp = "^(ACTIVE|OUT_OF_SERVICE)$", message = "Status must be ACTIVE or OUT_OF_SERVICE")
     private String status; // ACTIVE / OUT_OF_SERVICE
 
 }
