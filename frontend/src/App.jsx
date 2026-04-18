@@ -8,6 +8,7 @@ import MyBookings from './pages/MyBookings';
 import AdminOps from './pages/AdminOps';
 import TicketList from './pages/TicketList';
 import CreateTicket from './pages/CreateTicket';
+import AdminResourceOps from './pages/AdminResourceOps';
 
 function App() {
   return (
@@ -19,6 +20,7 @@ function App() {
           <Route path="book/:resourceId?" element={<CreateBooking />} />
           <Route path="my-bookings" element={<MyBookings />} />
           <Route path="admin" element={<AdminOps />} />
+          <Route path="admin-resources" element={<AdminResourceOps />} />
           <Route path="tickets" element={<TicketList />} />
           <Route path="report-issue" element={<CreateTicket />} />
         </Route>

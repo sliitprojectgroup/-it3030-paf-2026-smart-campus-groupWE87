@@ -19,6 +19,9 @@ api.interceptors.response.use(
 
 // Resources
 export const getResources = () => api.get('/resources');
+export const createResource = (data) => api.post('/resources', data);
+export const updateResource = (id, data) => api.put(`/resources/${id}`, data);
+export const deleteResource = (id) => api.delete(`/resources/${id}`);
 
 // Bookings
 export const createBooking = (data) => api.post('/bookings', data);
