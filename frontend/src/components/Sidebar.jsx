@@ -1,13 +1,23 @@
 import { NavLink } from 'react-router-dom';
+import { isAdmin } from '../utils/auth';
 
 export default function Sidebar({ isOpen, onClose }) {
-    const navItems = [
+    const baseNavItems = [
         { name: 'Dashboard', icon: 'dashboard', path: '/' },
-        { name: 'Resources', icon: 'inventory_2', path: '/resources' },
-        { name: 'Bookings', icon: 'event_available', path: '/my-bookings' },
+        { name: 'Resources', icon: 'inventory_2', path: '/resources' }
+    ];
+    
+    const userItems = [
+        { name: 'My Bookings', icon: 'event_available', path: '/my-bookings' }
+    ];
+
+    const adminItems = [
+        { name: 'All Bookings', icon: 'event_available', path: '/my-bookings' },
         { name: 'Admin Ops', icon: 'admin_panel_settings', path: '/admin' },
         { name: 'Admin Resources', icon: 'settings_applications', path: '/admin-resources' }
     ];
+
+    const navItems = isAdmin() ? [...baseNavItems, ...adminItems] : [...baseNavItems, ...userItems];
 
     return (
         <>
@@ -59,12 +69,14 @@ export default function Sidebar({ isOpen, onClose }) {
                     ))}
                 </div>
 
+                {!isAdmin() && (
                 <div className="mt-auto px-2 pb-4">
                     <NavLink to="/book" onClick={() => onClose()} className="w-full flex items-center justify-center gap-2 bg-primary text-on-primary py-3 rounded-xl font-body font-medium text-sm hover:bg-primary-container transition-colors shadow-sm">
                         <span className="material-symbols-outlined text-[18px]">add</span>
                         New Request
                     </NavLink>
                 </div>
+                )}
             </nav>
         </>
     );
