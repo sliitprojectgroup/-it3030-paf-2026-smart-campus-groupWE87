@@ -1,5 +1,6 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast';
 import { getRole, isAdmin } from './utils/auth';
 import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
@@ -27,6 +28,7 @@ const ProtectedRoute = ({ children, adminOnly = false }) => {
 function App() {
   return (
     <BrowserRouter>
+      <Toaster position="top-right" />
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>

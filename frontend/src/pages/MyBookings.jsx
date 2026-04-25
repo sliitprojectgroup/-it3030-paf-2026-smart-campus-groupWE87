@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { getUserBookings, cancelBooking, getAllBookings, getResources } from '../services/api';
+import toast from 'react-hot-toast';
 import { getRole, isAdmin, getUser } from '../utils/auth';
 
 export default function MyBookings() {
@@ -104,9 +105,9 @@ export default function MyBookings() {
         try {
             await cancelBooking(id);
             setBookings(bookings.map(b => (b.id === id || b.bookingId === id) ? { ...b, status: 'CANCELLED' } : b));
-            alert('Booking cancelled successfully.');
+            toast.success("Booking cancelled");
         } catch (err) {
-            alert(err.response?.data?.message || 'Failed to cancel booking. Please try again.');
+            toast.error('Failed to cancel booking');
         }
     };
 
