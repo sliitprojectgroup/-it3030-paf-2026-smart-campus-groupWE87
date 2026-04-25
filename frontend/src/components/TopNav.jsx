@@ -1,4 +1,15 @@
+import { useNavigate } from 'react-router-dom';
+import { getRole, clearRole } from '../utils/auth';
+
 export default function TopNav({ onOpenMenu }) {
+    const navigate = useNavigate();
+    const role = getRole() || 'GUEST';
+
+    const handleLogout = () => {
+        clearRole();
+        navigate('/select-role');
+    };
+
     return (
         <header className="sticky top-0 w-full z-30 md:z-20 bg-surface/80 backdrop-blur-xl flex justify-between items-center px-4 md:px-8 h-16 md:h-20 border-b border-surface-container-highest md:border-none transition-all">
             <div className="flex items-center gap-4 md:hidden">
@@ -13,12 +24,15 @@ export default function TopNav({ onOpenMenu }) {
             </div>
 
             <div className="flex items-center gap-4">
+                <span className="font-label text-sm font-semibold !text-white bg-primary-container px-3 py-1 rounded-full hidden md:inline-block">
+                    Logged in as {role}
+                </span>
                 <button className="w-10 h-10 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-surface-container transition-colors relative">
                     <span className="absolute top-2 right-2 w-2 h-2 bg-error rounded-full outline outline-2 outline-surface"></span>
                     <span className="material-symbols-outlined">notifications</span>
                 </button>
-                <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-surface-container cursor-pointer bg-primary-container text-on-primary flex items-center justify-center">
-                     <span className="font-headline font-bold">ST</span>
+                <div onClick={handleLogout} title="Change Role" className="w-10 h-10 rounded-full overflow-hidden border-2 border-surface-container cursor-pointer bg-primary-container text-on-primary flex items-center justify-center hover:bg-primary transition-colors">
+                     <span className="font-headline font-bold">{role === 'ADMIN' ? 'AD' : 'US'}</span>
                 </div>
             </div>
         </header>

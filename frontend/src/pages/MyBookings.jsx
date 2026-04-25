@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { getUserBookings, cancelBooking } from '../services/api';
+import { getUserBookings, cancelBooking, getAllBookings } from '../services/api';
+import { getRole, isAdmin } from '../utils/auth';
 
 export default function MyBookings() {
     const [bookings, setBookings] = useState([]);
@@ -10,8 +11,13 @@ export default function MyBookings() {
         const fetchBookings = async () => {
             try {
                 setLoading(true);
-                // User ID 1 is hardcoded per requirements
-                const data = await getUserBookings(1);
+                let data;
+                if (isAdmin()) {
+                    data = await getAllBookings();
+                } else {
+                    // User ID 1 is hardcoded per requirements
+                    data = await getUserBookings(1);
+                }
                 setBookings(data);
                 setError(null);
             } catch (err) {
@@ -59,8 +65,12 @@ export default function MyBookings() {
         <div className="p-6 md:p-12 max-w-6xl mx-auto mt-4 md:mt-0">
             <header className="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
                 <div>
-                    <h1 className="font-headline text-3xl md:text-4xl font-extrabold text-primary tracking-tight mb-2">My Bookings</h1>
-                    <p className="font-body text-on-surface-variant text-sm md:text-base">Review and manage your upcoming resource reservations.</p>
+                    <h1 className="font-headline text-3xl md:text-4xl font-extrabold text-primary tracking-tight mb-2">
+                        {isAdmin() ? 'All Bookings' : 'My Bookings'}
+                    </h1>
+                    <p className="font-body text-on-surface-variant text-sm md:text-base">
+                        {isAdmin() ? 'Review and manage all campus reservations.' : 'Review and manage your upcoming resource reservations.'}
+                    </p>
                 </div>
                 <div className="flex items-center gap-3">
                     <div className="relative w-full md:w-64">
@@ -120,7 +130,7 @@ export default function MyBookings() {
                                         </span>
                                     </div>
                                     <div className="col-span-2 flex items-center justify-end gap-2 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
-                                        {booking.status === 'PENDING' && (
+                                        {booking.status === 'PENDING' && !isAdmin() && (
                                             <button 
                                                 onClick={() => handleCancel(booking.id || booking.bookingId)}
                                                 className="text-xs font-body font-semibold text-error hover:bg-error-container/50 px-3 py-1.5 rounded-lg transition-colors">
