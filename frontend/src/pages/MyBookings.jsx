@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { getUserBookings, cancelBooking, getAllBookings } from '../services/api';
+import { useState, useEffect, useMemo } from 'react';
+import { getUserBookings, cancelBooking, getAllBookings, getResources } from '../services/api';
 import { getRole, isAdmin, getUser } from '../utils/auth';
 
 export default function MyBookings() {
@@ -7,19 +7,79 @@ export default function MyBookings() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
+    const [currentPage, setCurrentPage] = useState(1);
+    const [filterStatus, setFilterStatus] = useState('ALL');
+    const [sortBy, setSortBy] = useState('newest');
+    const [searchQuery, setSearchQuery] = useState('');
+    const [itemsPerPage, setItemsPerPage] = useState(5);
+
+    // Derived states
+    const processedBookings = useMemo(() => {
+        let result = [...bookings];
+        
+        // Search Filter
+        if (searchQuery.trim() !== '') {
+            const query = searchQuery.toLowerCase();
+            result = result.filter(b => 
+                (b.purpose && b.purpose.toLowerCase().includes(query)) ||
+                (b.resourceId && String(b.resourceId).includes(query)) ||
+                (b.resource && b.resource.id && String(b.resource.id).includes(query)) ||
+                (b.status && b.status.toLowerCase().includes(query))
+            );
+        }
+        
+        if (filterStatus !== 'ALL') {
+            result = result.filter(b => b.status === filterStatus);
+        }
+        
+        result.sort((a, b) => {
+            if (sortBy === 'newest') {
+                return new Date(b.date) - new Date(a.date);
+            } else if (sortBy === 'oldest') {
+                return new Date(a.date) - new Date(b.date);
+            } else if (sortBy === 'status') {
+                const order = { PENDING: 1, APPROVED: 2, REJECTED: 3, CANCELLED: 4 };
+                return (order[a.status] || 99) - (order[b.status] || 99);
+            }
+            return 0;
+        });
+        
+        return result;
+    }, [bookings, filterStatus, sortBy, searchQuery]);
+
+    const totalPages = Math.ceil(processedBookings.length / itemsPerPage);
+    const paginatedBookings = processedBookings.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
     useEffect(() => {
-        const fetchBookings = async () => {
+        setCurrentPage(1);
+    }, [filterStatus, sortBy, searchQuery]);
+
+    useEffect(() => {
+        const fetchData = async () => {
             try {
                 setLoading(true);
                 const currentUser = getUser();
                 const userId = currentUser?.id || 1;
-                let data;
-                if (isAdmin()) {
-                    data = await getAllBookings();
-                } else {
-                    data = await getUserBookings(userId);
+                let bookingsPromise = isAdmin() ? getAllBookings() : getUserBookings(userId);
+                
+                const [bookingsData, resourcesData] = await Promise.all([
+                    bookingsPromise,
+                    getResources()
+                ]);
+
+                const resourceMap = {};
+                if (Array.isArray(resourcesData)) {
+                    resourcesData.forEach(r => {
+                        resourceMap[r.id] = r;
+                    });
                 }
-                setBookings(data);
+
+                const mergedBookings = bookingsData.map(b => ({
+                    ...b,
+                    resource: resourceMap[b.resourceId] || null
+                }));
+
+                setBookings(mergedBookings);
                 setError(null);
             } catch (err) {
                 setError(err.response?.data?.message || 'Failed to load your bookings. Ensure backend is running.');
@@ -28,7 +88,7 @@ export default function MyBookings() {
             }
         };
 
-        fetchBookings();
+        fetchData();
     }, []);
 
     const handleCancel = async (id) => {
@@ -73,10 +133,39 @@ export default function MyBookings() {
                         {isAdmin() ? 'Review and manage all campus reservations.' : 'Review and manage your upcoming resource reservations.'}
                     </p>
                 </div>
-                <div className="flex items-center gap-3">
-                    <div className="relative w-full md:w-64">
+                <div className="flex flex-col lg:flex-row items-center gap-3">
+                    <div className="relative w-full lg:w-64">
                         <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px]">search</span>
-                        <input type="text" className="w-full bg-surface-container-highest border-none rounded-xl pl-10 pr-4 py-2.5 font-body text-sm text-on-surface focus:ring-2 focus:ring-primary focus:bg-surface-container-lowest transition-all placeholder:text-on-surface-variant/60" placeholder="Search bookings..." />
+                        <input 
+                            type="text" 
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="w-full bg-surface-container-highest border-none rounded-xl pl-10 pr-4 py-2.5 font-body text-sm text-on-surface focus:ring-2 focus:ring-primary focus:bg-surface-container-lowest transition-all placeholder:text-on-surface-variant/60 outline-none" 
+                            placeholder="Search bookings..." 
+                        />
+                    </div>
+                    <div className="flex flex-col sm:flex-row items-center gap-3 w-full lg:w-auto">
+                        <select 
+                            value={filterStatus}
+                            onChange={(e) => setFilterStatus(e.target.value)}
+                            className="w-full sm:w-auto bg-surface-container-highest border-none rounded-xl pl-4 pr-10 py-2.5 font-body text-sm text-on-surface focus:ring-2 focus:ring-primary outline-none"
+                        >
+                            <option value="ALL">All Statuses</option>
+                            <option value="PENDING">Pending</option>
+                            <option value="APPROVED">Approved</option>
+                            <option value="REJECTED">Rejected</option>
+                            <option value="CANCELLED">Cancelled</option>
+                        </select>
+
+                        <select 
+                            value={sortBy}
+                            onChange={(e) => setSortBy(e.target.value)}
+                            className="w-full sm:w-auto bg-surface-container-highest border-none rounded-xl pl-4 pr-10 py-2.5 font-body text-sm text-on-surface focus:ring-2 focus:ring-primary outline-none"
+                        >
+                            <option value="newest">Date (Newest First)</option>
+                            <option value="oldest">Date (Oldest First)</option>
+                            <option value="status">Status (Pending First)</option>
+                        </select>
                     </div>
                 </div>
             </header>
@@ -104,10 +193,10 @@ export default function MyBookings() {
                     </div>
                 ) : (
                     <div className="flex flex-col gap-3">
-                        {bookings.length === 0 ? (
-                            <div className="p-8 text-center text-on-surface-variant font-body text-sm">You have no bookings yet.</div>
+                        {paginatedBookings.length === 0 ? (
+                            <div className="p-8 text-center text-on-surface-variant font-body text-sm">No bookings found for the selected criteria.</div>
                         ) : (
-                            bookings.map((booking) => (
+                            paginatedBookings.map((booking) => (
                                 <div key={booking.id || booking.bookingId} className={`bg-surface rounded-xl p-5 hover:bg-surface-container-highest transition-colors grid grid-cols-1 lg:grid-cols-12 gap-4 items-center group relative overflow-hidden ${booking.status === 'REJECTED' || booking.status === 'CANCELLED' ? 'opacity-75' : ''}`}>
                                     <div className="col-span-2 flex flex-col">
                                         <span className={`font-headline font-bold text-base ${booking.status === 'CANCELLED' || booking.status === 'REJECTED' ? 'line-through text-on-surface-variant/60' : 'text-on-surface'}`}>{booking.date}</span>
@@ -118,7 +207,7 @@ export default function MyBookings() {
                                             <span className="material-symbols-outlined text-[20px]">event_seat</span>
                                         </div>
                                         <div className="flex flex-col">
-                                            <span className="font-body font-semibold text-on-surface text-sm">Resource #{booking.resource?.id || booking.resourceId}</span>
+                                            <span className="font-body font-semibold text-on-surface text-sm">{booking.resource?.name || `Resource #${booking.resource?.id || booking.resourceId}`}</span>
                                         </div>
                                     </div>
                                     <div className="col-span-3">
@@ -142,6 +231,52 @@ export default function MyBookings() {
                                 </div>
                             ))
                         )}
+                    </div>
+                )}
+                
+                {/* Pagination Controls */}
+                {!loading && processedBookings.length > itemsPerPage && (
+                    <div className="flex items-center justify-between px-6 py-4 mt-2 border-t border-surface-container-highest">
+                        <div className="flex items-center gap-4">
+                            <span className="text-sm font-body text-on-surface-variant">
+                                Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, processedBookings.length)} of {processedBookings.length}
+                            </span>
+                            {processedBookings.length > 5 && (
+                                <button 
+                                    onClick={() => {
+                                        if (itemsPerPage === 5) {
+                                            setItemsPerPage(9999);
+                                            setCurrentPage(1);
+                                        } else {
+                                            setItemsPerPage(5);
+                                            setCurrentPage(1);
+                                        }
+                                    }}
+                                    className="text-xs font-body font-bold text-primary hover:bg-primary/5 px-2.5 py-1 rounded-lg border border-primary/20 transition-all active:scale-95"
+                                >
+                                    {itemsPerPage === 5 ? 'View All' : 'Show Less'}
+                                </button>
+                            )}
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <button 
+                                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                disabled={currentPage === 1}
+                                className="px-3 py-1.5 rounded-lg text-sm font-medium font-body bg-surface-container hover:bg-surface-container-highest disabled:opacity-50 transition-colors"
+                            >
+                                Prev
+                            </button>
+                            <span className="text-sm font-body font-semibold px-3 py-1.5 bg-primary/10 text-primary rounded-lg">
+                                {currentPage}
+                            </span>
+                            <button 
+                                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                                disabled={currentPage === totalPages}
+                                className="px-3 py-1.5 rounded-lg text-sm font-medium font-body bg-surface-container hover:bg-surface-container-highest disabled:opacity-50 transition-colors"
+                            >
+                                Next
+                            </button>
+                        </div>
                     </div>
                 )}
             </div>
