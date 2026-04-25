@@ -28,6 +28,11 @@ public class BookingService {
             throw new ConflictException("Resource is currently OUT_OF_SERVICE");
         }
 
+        // Capacity validation
+        if (booking.getAttendees() > resource.getCapacity()) {
+            throw new ConflictException("Exceeds resource capacity. Maximum allowed is " + resource.getCapacity());
+        }
+
         // Check for time conflicts
         boolean hasConflict = bookingRepository.existsConflict(
                 booking.getResourceId(), booking.getDate(), booking.getStartTime(), booking.getEndTime());
@@ -43,6 +48,10 @@ public class BookingService {
 
     public List<Booking> getAllBookings() {
         return bookingRepository.findAll();
+    }
+
+    public List<Booking> getBookingsByResourceAndDate(Long resourceId, java.time.LocalDate date) {
+        return bookingRepository.findByResourceIdAndDate(resourceId, date);
     }
 
     public List<Booking> getBookingsByUserId(Long userId) {

@@ -24,7 +24,12 @@ public class BookingController {
     }
 
     @GetMapping
-    public ResponseEntity<List<Booking>> getAllBookings() {
+    public ResponseEntity<List<Booking>> getBookings(
+            @RequestParam(required = false) Long resourceId,
+            @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) java.time.LocalDate date) {
+        if (resourceId != null && date != null) {
+            return ResponseEntity.ok(bookingService.getBookingsByResourceAndDate(resourceId, date));
+        }
         return ResponseEntity.ok(bookingService.getAllBookings());
     }
 

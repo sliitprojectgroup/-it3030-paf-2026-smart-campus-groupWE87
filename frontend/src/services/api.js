@@ -28,6 +28,7 @@ export const createBooking = (data) => api.post('/bookings', data);
 export const getUserBookings = (userId) => api.get(`/bookings/user/${userId}`);
 export const getPendingBookings = () => api.get('/bookings/pending');
 export const getAllBookings = () => api.get('/bookings');
+export const getBookingsByDateAndResource = (resourceId, date) => api.get(`/bookings?resourceId=${resourceId}&date=${date}`);
 export const approveBooking = (id) => api.put(`/bookings/${id}/approve`);
 export const rejectBooking = (id, reason) => api.put(`/bookings/${id}/reject`, null, { params: { reason } });
 export const cancelBooking = (id) => api.put(`/bookings/${id}/cancel`);
