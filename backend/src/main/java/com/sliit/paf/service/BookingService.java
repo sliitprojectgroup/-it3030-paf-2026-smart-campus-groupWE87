@@ -53,6 +53,10 @@ public class BookingService {
         return bookingRepository.findByStatus("PENDING");
     }
 
+    public List<Booking> getBookingsByResourceAndDate(Long resourceId, java.time.LocalDate date) {
+        return bookingRepository.findByResourceIdAndDate(resourceId, date);
+    }
+
     public Booking approveBooking(Long id) {
         Booking booking = getBookingByIdOrThrow(id);
         booking.setStatus("APPROVED");

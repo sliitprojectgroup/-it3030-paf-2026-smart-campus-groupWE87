@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { createBooking, getResources, getBookingsByDateAndResource } from '../services/api';
+import toast from 'react-hot-toast';
 
 const ALL_SLOTS = [
     "08:00", "08:30", "09:00", "09:30", "10:00", "10:30", 
@@ -159,6 +160,7 @@ export default function CreateBooking() {
 
         if (resource && attendeesNum > resource.capacity) {
             setError(`Exceeds resource capacity. Maximum allowed is ${resource.capacity}`);
+            toast.error("Exceeds resource capacity");
             return;
         }
 
@@ -186,12 +188,17 @@ export default function CreateBooking() {
             
             await createBooking(bookingData);
             setSuccess(true);
+            toast.success("Booking request submitted");
             setTimeout(() => {
                 navigate('/my-bookings');
             }, 1500);
         } catch (err) {
-            if (err.response?.status === 409 || err.response?.data?.message?.includes("Exceeds")) {
-                setError(err.response?.data?.message || 'Time slot already booked or Exceeds capacity');
+            if (err.response?.status === 409 || err.response?.data?.message?.toLowerCase().includes("booked") || err.response?.data?.message?.toLowerCase().includes("conflict")) {
+                setError(err.response?.data?.message || 'Time slot already booked');
+                toast.error("Time slot already booked");
+            } else if (err.response?.data?.message?.toLowerCase().includes("exceed")) {
+                setError(err.response?.data?.message || 'Exceeds capacity');
+                toast.error("Exceeds resource capacity");
             } else {
                 setError('Something went wrong');
             }

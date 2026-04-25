@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { getPendingBookings, approveBooking, rejectBooking, getResources } from '../services/api';
+import toast from 'react-hot-toast';
 import { getUser } from '../utils/auth';
 
 export default function AdminOps() {
@@ -56,8 +57,9 @@ export default function AdminOps() {
         try {
             await approveBooking(id);
             setBookings(bookings.map(b => (b.id === id ? { ...b, status: 'APPROVED' } : b)));
+            toast.success("Booking approved successfully");
         } catch (err) {
-            alert('Failed to approve booking. ' + (err.response?.data?.message || err.message));
+            toast.error("Failed to approve booking");
         }
     };
 
@@ -76,8 +78,9 @@ export default function AdminOps() {
             await rejectBooking(selectedBookingId, rejectReason);
             setBookings(bookings.map(b => (b.id === selectedBookingId ? { ...b, status: 'REJECTED' } : b)));
             setShowRejectModal(false);
+            toast.success("Booking rejected");
         } catch (err) {
-            alert('Failed to reject booking. ' + (err.response?.data?.message || err.message));
+            toast.error("Failed to reject booking");
         }
     };
 
