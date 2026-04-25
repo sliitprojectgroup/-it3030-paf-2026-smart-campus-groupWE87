@@ -14,7 +14,7 @@ export default function AdminResourceOps() {
         loadResources();
     }, []);
 
-    const loadResources = async () => {
+    async function loadResources() {
         try {
             setLoading(true);
             const data = await getResources();
