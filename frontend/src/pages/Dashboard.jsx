@@ -1,15 +1,18 @@
 import { Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { getUserBookings } from '../services/api';
+import { getUser } from '../utils/auth';
 
 export default function Dashboard() {
     const [stats, setStats] = useState({ approved: 0, pending: 0, total: 0 });
+    const user = getUser();
+    const firstName = user?.name ? user.name.split(' ')[0] : 'User';
+    const userId = user?.id || 1;
 
     useEffect(() => {
         const fetchStats = async () => {
             try {
-                // Hardcoded user 1
-                const bookings = await getUserBookings(1);
+                const bookings = await getUserBookings(userId);
                 const approved = bookings.filter(b => b.status === 'APPROVED').length;
                 const pending = bookings.filter(b => b.status === 'PENDING').length;
                 setStats({ approved, pending, total: bookings.length });
@@ -25,7 +28,7 @@ export default function Dashboard() {
             <section className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-primary to-primary-container p-8 md:p-12 text-on-primary shadow-[0px_20px_40px_rgba(0,27,68,0.06)] mt-8 md:mt-10">
                 <div className="relative z-10 max-w-2xl">
                     <p className="font-inter text-primary-fixed-dim text-sm font-medium tracking-wide uppercase mb-2">Student Portal</p>
-                    <h2 className="font-headline text-4xl md:text-5xl font-extrabold tracking-tight mb-4 text-surface-bright">Welcome, User</h2>
+                    <h2 className="font-headline text-4xl md:text-5xl font-extrabold tracking-tight mb-4 text-surface-bright">Welcome, {firstName}</h2>
                     <p className="font-body text-inverse-on-surface text-base md:text-lg max-w-xl opacity-90 leading-relaxed">Here is a summary of your campus activities and upcoming reservations for today.</p>
                 </div>
                 {/* Abstract decorative element */}

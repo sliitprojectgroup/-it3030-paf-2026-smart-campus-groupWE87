@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { getUserBookings, cancelBooking, getAllBookings, getResources } from '../services/api';
-import { getRole, isAdmin } from '../utils/auth';
+import { getRole, isAdmin, getUser } from '../utils/auth';
 
 export default function MyBookings() {
     const [bookings, setBookings] = useState([]);
@@ -58,7 +58,9 @@ export default function MyBookings() {
         const fetchData = async () => {
             try {
                 setLoading(true);
-                let bookingsPromise = isAdmin() ? getAllBookings() : getUserBookings(1);
+                const currentUser = getUser();
+                const userId = currentUser?.id || 1;
+                let bookingsPromise = isAdmin() ? getAllBookings() : getUserBookings(userId);
                 
                 const [bookingsData, resourcesData] = await Promise.all([
                     bookingsPromise,

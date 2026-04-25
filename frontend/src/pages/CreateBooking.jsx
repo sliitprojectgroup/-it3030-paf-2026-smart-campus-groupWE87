@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { createBooking } from '../services/api';
+import { getUser } from '../utils/auth';
 
 export default function CreateBooking() {
     const { resourceId } = useParams();
@@ -33,8 +34,9 @@ export default function CreateBooking() {
 
         try {
             setLoading(true);
+            const currentUser = getUser();
             const bookingData = {
-                userId: 1, // hardcoded per requirements
+                userId: currentUser?.id || 1,
                 resourceId: parseInt(resourceId),
                 date: formData.date,
                 startTime: formData.startTime,
