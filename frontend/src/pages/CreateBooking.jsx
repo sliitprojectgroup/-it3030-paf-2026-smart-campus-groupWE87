@@ -259,10 +259,11 @@ export default function CreateBooking() {
                                             </div>
                                         </div>
                                         
-                                        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
-                                            {ALL_SLOTS.map(slot => {
+                                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                                            {ALL_SLOTS.map((slot, index) => {
                                                 const isBooked = bookedSlots.includes(slot);
                                                 const isSelected = isSlotSelected(slot);
+                                                const nextSlot = ALL_SLOTS[index + 1] || "18:30";
                                                 
                                                 return (
                                                     <button
@@ -270,26 +271,39 @@ export default function CreateBooking() {
                                                         type="button"
                                                         disabled={isBooked}
                                                         onClick={() => handleSlotClick(slot)}
-                                                        className={`py-2 px-1 rounded-lg text-sm font-medium transition-all ${
+                                                        className={`py-2 px-1 rounded-lg text-xs font-medium transition-all whitespace-nowrap ${
                                                             isBooked ? 'bg-outline-variant/20 text-outline-variant/60 cursor-not-allowed border border-transparent' : 
                                                             isSelected ? 'bg-primary text-on-primary border border-primary shadow-sm transform scale-[1.02]' : 
                                                             'bg-surface-container-highest text-on-surface hover:bg-surface-container-highest/80 border border-outline/20'
                                                         }`}
                                                     >
-                                                        {slot}
+                                                        {slot} - {nextSlot}
                                                     </button>
                                                 );
                                             })}
                                         </div>
                                         
-                                        {startSlot && (
-                                            <div className="mt-4 p-3 bg-primary-container/30 rounded-lg flex items-center justify-between">
-                                                <span className="text-sm font-medium text-primary">Selected Range:</span>
-                                                <span className="text-sm font-bold text-primary">
-                                                    {startSlot} - {endSlot ? ALL_SLOTS[ALL_SLOTS.indexOf(endSlot) + 1] || "18:30" : ALL_SLOTS[ALL_SLOTS.indexOf(startSlot) + 1] || "18:30"}
-                                                </span>
-                                            </div>
-                                        )}
+                                        {startSlot && (() => {
+                                            const startIdx = ALL_SLOTS.indexOf(startSlot);
+                                            const endIdx = endSlot ? ALL_SLOTS.indexOf(endSlot) : startIdx;
+                                            const selectedSlotsList = ALL_SLOTS.slice(startIdx, endIdx + 1);
+                                            const actualEndTime = ALL_SLOTS[endIdx + 1] || "18:30";
+
+                                            return (
+                                                <div className="mt-4 p-4 bg-primary-container/30 rounded-lg flex flex-col gap-3">
+                                                    <div className="flex justify-between items-center">
+                                                        <span className="text-sm font-medium text-primary">Booking Time Range:</span>
+                                                        <span className="text-sm font-bold text-primary">
+                                                            {startSlot} → {actualEndTime} ({selectedSlotsList.length} {selectedSlotsList.length === 1 ? 'slot' : 'slots'})
+                                                        </span>
+                                                    </div>
+                                                    <div className="flex flex-col gap-1 border-t border-primary/20 pt-2">
+                                                        <span className="text-xs font-semibold text-primary/80">Selected Slots:</span>
+                                                        <span className="text-xs font-medium text-primary">{selectedSlotsList.join(', ')}</span>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })()}
                                     </div>
                                 )}
                             </div>
