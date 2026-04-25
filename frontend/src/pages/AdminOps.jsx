@@ -1,10 +1,14 @@
 import { useState, useEffect } from 'react';
 import { getAllBookings, approveBooking, rejectBooking } from '../services/api';
+import { getUser } from '../utils/auth';
 
 export default function AdminOps() {
     const [bookings, setBookings] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+
+    const user = getUser();
+    const firstName = user?.name ? user.name.split(' ')[0] : 'Admin';
 
     // Modal state for rejection reason
     const [showRejectModal, setShowRejectModal] = useState(false);
@@ -63,7 +67,7 @@ export default function AdminOps() {
         <div className="p-6 md:p-12 max-w-7xl mx-auto w-full">
             <header className="mb-12 flex justify-between items-end">
                 <div>
-                    <h2 className="font-headline text-3xl font-bold text-primary mb-2">Morning, Admin.</h2>
+                    <h2 className="font-headline text-3xl font-bold text-primary mb-2">Morning, {firstName}.</h2>
                     <p className="font-body text-on-surface-variant">Here is the current state of campus operations.</p>
                 </div>
             </header>

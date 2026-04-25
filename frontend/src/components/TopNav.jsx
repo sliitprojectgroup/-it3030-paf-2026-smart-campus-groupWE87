@@ -1,13 +1,15 @@
 import { useNavigate } from 'react-router-dom';
-import { getRole, clearRole } from '../utils/auth';
+import { getRole, getUser, clearRole } from '../utils/auth';
 
 export default function TopNav({ onOpenMenu }) {
     const navigate = useNavigate();
     const role = getRole() || 'GUEST';
+    const user = getUser();
+    const firstName = user?.name ? user.name.split(' ')[0] : (role === 'ADMIN' ? 'Admin' : 'User');
 
     const handleLogout = () => {
         clearRole();
-        navigate('/select-role');
+        navigate('/login');
     };
 
     return (
@@ -25,14 +27,14 @@ export default function TopNav({ onOpenMenu }) {
 
             <div className="flex items-center gap-4">
                 <span className="font-label text-sm font-semibold !text-white bg-primary-container px-3 py-1 rounded-full hidden md:inline-block">
-                    Logged in as {role}
+                    Logged in as {firstName} ({role})
                 </span>
                 <button className="w-10 h-10 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-surface-container transition-colors relative">
                     <span className="absolute top-2 right-2 w-2 h-2 bg-error rounded-full outline outline-2 outline-surface"></span>
                     <span className="material-symbols-outlined">notifications</span>
                 </button>
                 <div onClick={handleLogout} title="Change Role" className="w-10 h-10 rounded-full overflow-hidden border-2 border-surface-container cursor-pointer bg-primary-container text-on-primary flex items-center justify-center hover:bg-primary transition-colors">
-                     <span className="font-headline font-bold">{role === 'ADMIN' ? 'AD' : 'US'}</span>
+                     <span className="font-headline font-bold">{firstName.substring(0, 2).toUpperCase()}</span>
                 </div>
             </div>
         </header>

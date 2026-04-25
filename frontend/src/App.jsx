@@ -10,12 +10,12 @@ import AdminOps from './pages/AdminOps';
 import TicketList from './pages/TicketList';
 import CreateTicket from './pages/CreateTicket';
 import AdminResourceOps from './pages/AdminResourceOps';
-import RoleSelect from './pages/RoleSelect';
+import Login from './pages/Login';
 
 const ProtectedRoute = ({ children, adminOnly = false }) => {
     const role = getRole();
     if (!role) {
-        return <Navigate to="/select-role" replace />;
+        return <Navigate to="/login" replace />;
     }
     if (adminOnly && !isAdmin()) {
         return <Navigate to="/" replace />;
@@ -27,7 +27,7 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/select-role" element={<RoleSelect />} />
+        <Route path="/login" element={<Login />} />
         <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
           <Route index element={<Dashboard />} />
           <Route path="resources" element={<Resources />} />

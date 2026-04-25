@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { getUserBookings, cancelBooking, getAllBookings } from '../services/api';
-import { getRole, isAdmin } from '../utils/auth';
+import { getRole, isAdmin, getUser } from '../utils/auth';
 
 export default function MyBookings() {
     const [bookings, setBookings] = useState([]);
@@ -11,12 +11,13 @@ export default function MyBookings() {
         const fetchBookings = async () => {
             try {
                 setLoading(true);
+                const currentUser = getUser();
+                const userId = currentUser?.id || 1;
                 let data;
                 if (isAdmin()) {
                     data = await getAllBookings();
                 } else {
-                    // User ID 1 is hardcoded per requirements
-                    data = await getUserBookings(1);
+                    data = await getUserBookings(userId);
                 }
                 setBookings(data);
                 setError(null);
