@@ -55,4 +55,8 @@ public class Booking {
     private String status; // PENDING, APPROVED, REJECTED, CANCELLED
 
     private String adminReason;
+
+    @org.hibernate.annotations.CreationTimestamp
+    @Column(updatable = false)
+    private java.time.LocalDateTime createdAt;
 }

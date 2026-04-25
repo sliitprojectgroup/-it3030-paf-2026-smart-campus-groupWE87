@@ -12,8 +12,8 @@ export default function Sidebar({ isOpen, onClose }) {
     ];
 
     const adminItems = [
-        { name: 'All Bookings', icon: 'event_available', path: '/my-bookings' },
-        { name: 'Admin Ops', icon: 'admin_panel_settings', path: '/admin' },
+        { name: 'Pending Approvals', icon: 'admin_panel_settings', path: '/admin' },
+        { name: 'All Requests', icon: 'event_available', path: '/my-bookings' },
         { name: 'Admin Resources', icon: 'settings_applications', path: '/admin-resources' }
     ];
 

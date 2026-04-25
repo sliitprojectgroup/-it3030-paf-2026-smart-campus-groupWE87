@@ -1,15 +1,11 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { getPendingBookings, approveBooking, rejectBooking, getResources } from '../services/api';
-import { getUser } from '../utils/auth';
 
-export default function AdminOps() {
+export default function PendingBookings() {
     const [bookings, setBookings] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-
-    const user = getUser();
-    const firstName = user?.name ? user.name.split(' ')[0] : 'Admin';
 
     // Modal state for rejection reason
     const [showRejectModal, setShowRejectModal] = useState(false);
@@ -46,16 +42,17 @@ export default function AdminOps() {
             setBookings(mergedBookings);
             setError(null);
         } catch (err) {
-            setError(err.response?.data?.message || 'Failed to load bookings for administration.');
+            setError(err.response?.data?.message || 'Failed to load pending bookings.');
         } finally {
             setLoading(false);
         }
-    };
+    }
 
     const handleApprove = async (id) => {
         try {
             await approveBooking(id);
-            setBookings(bookings.map(b => (b.id === id ? { ...b, status: 'APPROVED' } : b)));
+            // Remove from the pending list once approved
+            setBookings(bookings.filter(b => b.id !== id));
         } catch (err) {
             alert('Failed to approve booking. ' + (err.response?.data?.message || err.message));
         }
@@ -74,7 +71,8 @@ export default function AdminOps() {
         }
         try {
             await rejectBooking(selectedBookingId, rejectReason);
-            setBookings(bookings.map(b => (b.id === selectedBookingId ? { ...b, status: 'REJECTED' } : b)));
+            // Remove from the pending list once rejected
+            setBookings(bookings.filter(b => b.id !== selectedBookingId));
             setShowRejectModal(false);
         } catch (err) {
             alert('Failed to reject booking. ' + (err.response?.data?.message || err.message));
@@ -95,7 +93,6 @@ export default function AdminOps() {
         }
 
         pending.sort((a, b) => {
-            // Admin Ops Special Rule: Upcoming bookings first (ascending time) or newest startTime
             const timeA = new Date(`${a.date}T${a.startTime}`);
             const timeB = new Date(`${b.date}T${b.startTime}`);
             const reqA = new Date(a.createdAt || a.date);
@@ -119,14 +116,16 @@ export default function AdminOps() {
         return pending;
     }, [bookings, searchQuery, sortOption]);
 
-    const displayPendingBookings = processedPendingBookings.slice(0, 5);
-
     return (
         <div className="p-6 md:p-12 max-w-7xl mx-auto w-full">
-            <header className="mb-12 flex justify-between items-end">
+            <header className="mb-12 flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
                 <div>
-                    <h2 className="font-headline text-3xl font-bold text-primary mb-2">Morning, {firstName}.</h2>
-                    <p className="font-body text-on-surface-variant">Here is the current state of campus operations.</p>
+                    <Link to="/admin" className="inline-flex items-center gap-1 text-sm font-body text-on-surface-variant hover:text-primary mb-4 transition-colors">
+                        <span className="material-symbols-outlined text-[16px]">arrow_back</span>
+                        Back to Admin Ops
+                    </Link>
+                    <h2 className="font-headline text-3xl font-bold text-primary mb-2">Pending Approvals</h2>
+                    <p className="font-body text-on-surface-variant">Review all pending booking requests.</p>
                 </div>
             </header>
 
@@ -138,11 +137,10 @@ export default function AdminOps() {
             )}
 
             <div className="grid grid-cols-1 gap-6">
-                {/* Pending Approvals */}
                 <section className="bg-surface-container-low rounded-xl p-6 md:p-8 flex flex-col">
                     <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 mb-6">
                         <div className="flex items-center gap-4">
-                            <h3 className="font-headline text-xl font-bold text-primary">Pending Approvals</h3>
+                            <h3 className="font-headline text-xl font-bold text-primary">All Pending Requests</h3>
                             <span className="bg-tertiary-fixed-dim text-on-tertiary-fixed px-3 py-1 rounded-full text-xs font-semibold font-label tracking-wide">
                                 {processedPendingBookings.length} AWAITING
                             </span>
@@ -168,9 +166,6 @@ export default function AdminOps() {
                                 <option value="requested_newest">Requested Time (Newest)</option>
                                 <option value="requested_oldest">Requested Time (Oldest)</option>
                             </select>
-                            <Link to="/admin/pending-bookings" className="text-sm font-medium font-body text-primary hover:underline whitespace-nowrap">
-                                View All
-                            </Link>
                         </div>
                     </div>
 
@@ -180,10 +175,10 @@ export default function AdminOps() {
                          </div>
                     ) : (
                         <div className="space-y-6">
-                            {displayPendingBookings.length === 0 ? (
+                            {processedPendingBookings.length === 0 ? (
                                 <p className="text-sm font-body text-on-surface-variant">No pending bookings.</p>
                             ) : (
-                                displayPendingBookings.map((booking) => (
+                                processedPendingBookings.map((booking) => (
                                     <div key={booking.id} className="bg-surface-container-lowest rounded-xl p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 transition-all hover:bg-surface-container-highest group border border-outline-variant/10 shadow-sm">
                                         <div className="flex items-start gap-4">
                                             <div className="w-12 h-12 rounded-full bg-surface-container flex items-center justify-center flex-shrink-0 text-primary">

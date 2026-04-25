@@ -9,7 +9,7 @@ export default function MyBookings() {
 
     const [currentPage, setCurrentPage] = useState(1);
     const [filterStatus, setFilterStatus] = useState('ALL');
-    const [sortBy, setSortBy] = useState('newest');
+    const [sortBy, setSortBy] = useState('booking_newest');
     const [searchQuery, setSearchQuery] = useState('');
     const [itemsPerPage, setItemsPerPage] = useState(5);
 
@@ -33,10 +33,19 @@ export default function MyBookings() {
         }
         
         result.sort((a, b) => {
-            if (sortBy === 'newest') {
-                return new Date(b.date) - new Date(a.date);
-            } else if (sortBy === 'oldest') {
-                return new Date(a.date) - new Date(b.date);
+            const timeA = new Date(`${a.date}T${a.startTime}`);
+            const timeB = new Date(`${b.date}T${b.startTime}`);
+            const reqA = new Date(a.createdAt || a.date);
+            const reqB = new Date(b.createdAt || b.date);
+
+            if (sortBy === 'booking_newest') {
+                return timeB - timeA;
+            } else if (sortBy === 'booking_oldest') {
+                return timeA - timeB;
+            } else if (sortBy === 'requested_newest') {
+                return reqB - reqA;
+            } else if (sortBy === 'requested_oldest') {
+                return reqA - reqB;
             } else if (sortBy === 'status') {
                 const order = { PENDING: 1, APPROVED: 2, REJECTED: 3, CANCELLED: 4 };
                 return (order[a.status] || 99) - (order[b.status] || 99);
@@ -161,8 +170,10 @@ export default function MyBookings() {
                             onChange={(e) => setSortBy(e.target.value)}
                             className="w-full sm:w-auto bg-surface-container-highest border-none rounded-xl pl-4 pr-10 py-2.5 font-body text-sm text-on-surface focus:ring-2 focus:ring-primary outline-none"
                         >
-                            <option value="newest">Date (Newest First)</option>
-                            <option value="oldest">Date (Oldest First)</option>
+                            <option value="booking_newest">Booking Time (Newest)</option>
+                            <option value="booking_oldest">Booking Time (Oldest)</option>
+                            <option value="requested_newest">Requested Time (Newest)</option>
+                            <option value="requested_oldest">Requested Time (Oldest)</option>
                             <option value="status">Status (Pending First)</option>
                         </select>
                     </div>
@@ -197,9 +208,15 @@ export default function MyBookings() {
                         ) : (
                             paginatedBookings.map((booking) => (
                                 <div key={booking.id || booking.bookingId} className={`bg-surface rounded-xl p-5 hover:bg-surface-container-highest transition-colors grid grid-cols-1 lg:grid-cols-12 gap-4 items-center group relative overflow-hidden ${booking.status === 'REJECTED' || booking.status === 'CANCELLED' ? 'opacity-75' : ''}`}>
-                                    <div className="col-span-2 flex flex-col">
-                                        <span className={`font-headline font-bold text-base ${booking.status === 'CANCELLED' || booking.status === 'REJECTED' ? 'line-through text-on-surface-variant/60' : 'text-on-surface'}`}>{booking.date}</span>
-                                        <span className="font-body text-on-surface-variant text-sm">{booking.startTime} - {booking.endTime}</span>
+                                    <div className="col-span-2 flex flex-col gap-1">
+                                        <div className={`flex flex-col ${booking.status === 'CANCELLED' || booking.status === 'REJECTED' ? 'line-through text-on-surface-variant/60' : 'text-on-surface'}`}>
+                                            <span className="font-label text-[10px] uppercase text-on-surface-variant">Booking Time</span>
+                                            <span className="font-headline font-bold text-sm">{booking.date} {booking.startTime ? booking.startTime.substring(0, 5) : ''}</span>
+                                        </div>
+                                        <div className="flex flex-col mt-1">
+                                            <span className="font-label text-[10px] uppercase text-on-surface-variant">Requested At</span>
+                                            <span className="font-body text-xs text-on-surface-variant">{booking.createdAt ? new Date(booking.createdAt).toISOString().substring(0, 16).replace('T', ' ') : 'N/A'}</span>
+                                        </div>
                                     </div>
                                     <div className="col-span-3 flex items-center gap-3">
                                         <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${booking.status === 'CANCELLED' || booking.status === 'REJECTED' ? 'bg-surface-container text-on-surface-variant/60' : 'bg-surface-container text-primary'}`}>

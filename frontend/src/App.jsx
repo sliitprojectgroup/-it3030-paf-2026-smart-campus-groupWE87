@@ -11,6 +11,7 @@ import TicketList from './pages/TicketList';
 import CreateTicket from './pages/CreateTicket';
 import AdminResourceOps from './pages/AdminResourceOps';
 import Login from './pages/Login';
+import PendingBookings from './pages/PendingBookings';
 
 const ProtectedRoute = ({ children, adminOnly = false }) => {
     const role = getRole();
@@ -34,6 +35,7 @@ function App() {
           <Route path="book/:resourceId?" element={<CreateBooking />} />
           <Route path="my-bookings" element={<MyBookings />} />
           <Route path="admin" element={<ProtectedRoute adminOnly><AdminOps /></ProtectedRoute>} />
+          <Route path="admin/pending-bookings" element={<ProtectedRoute adminOnly><PendingBookings /></ProtectedRoute>} />
           <Route path="admin-resources" element={<ProtectedRoute adminOnly><AdminResourceOps /></ProtectedRoute>} />
           <Route path="tickets" element={<TicketList />} />
           <Route path="report-issue" element={<CreateTicket />} />
