@@ -33,6 +33,11 @@ public class BookingController {
         return ResponseEntity.ok(bookingService.getBookingsByUserId(userId));
     }
 
+    @GetMapping("/pending")
+    public ResponseEntity<List<Booking>> getPendingBookings() {
+        return ResponseEntity.ok(bookingService.getPendingBookings());
+    }
+
     @PutMapping("/{id}/approve")
     public ResponseEntity<Booking> approveBooking(@PathVariable Long id) {
         return ResponseEntity.ok(bookingService.approveBooking(id));

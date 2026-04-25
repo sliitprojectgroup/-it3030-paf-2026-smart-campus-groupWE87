@@ -12,8 +12,8 @@ import java.util.List;
 
 @Repository
 public interface BookingRepository extends JpaRepository<Booking, Long> {
-    
     List<Booking> findByUserId(Long userId);
+    List<Booking> findByStatus(String status);
 
     @Query("SELECT COUNT(b) > 0 FROM Booking b WHERE b.resourceId = :resourceId AND b.date = :date " +
            "AND b.status IN ('PENDING', 'APPROVED') " +

@@ -34,9 +34,8 @@ export default function CreateBooking() {
 
         try {
             setLoading(true);
-            const currentUser = getUser();
             const bookingData = {
-                userId: currentUser?.id || 1,
+                userId: parseInt(localStorage.getItem('userId')) || 1,
                 resourceId: parseInt(resourceId),
                 date: formData.date,
                 startTime: formData.startTime,

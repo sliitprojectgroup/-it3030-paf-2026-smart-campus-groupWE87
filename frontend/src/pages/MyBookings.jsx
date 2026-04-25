@@ -58,8 +58,7 @@ export default function MyBookings() {
         const fetchData = async () => {
             try {
                 setLoading(true);
-                const currentUser = getUser();
-                const userId = currentUser?.id || 1;
+                const userId = parseInt(localStorage.getItem('userId')) || 1;
                 let bookingsPromise = isAdmin() ? getAllBookings() : getUserBookings(userId);
                 
                 const [bookingsData, resourcesData] = await Promise.all([
