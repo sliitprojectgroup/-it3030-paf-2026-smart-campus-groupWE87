@@ -177,7 +177,7 @@ export default function AdminOps() {
                                             </div>
                                             <div>
                                                 <h4 className="font-body font-semibold text-on-surface">{booking.purpose}</h4>
-                                                <p className="font-body text-sm text-on-surface-variant mt-1">Resource: {booking.resource?.name || `#${booking.resource?.id || booking.resourceId}`} ΓÇó Attendees: {booking.attendees}</p>
+                                                <p className="font-body text-sm text-on-surface-variant mt-1">Resource: {booking.resource?.name || `#${booking.resource?.id || booking.resourceId}`} • Attendees: {booking.attendees}</p>
                                                 <div className="flex gap-2 mt-2">
                                                     <span className="inline-flex items-center gap-1 text-xs font-medium text-on-surface-variant bg-surface px-2 py-1 rounded-md">
                                                         <span className="material-symbols-outlined text-[14px]">calendar_today</span> {booking.date}, {booking.startTime}
