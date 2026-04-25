@@ -37,6 +37,7 @@ public class BookingService {
         }
 
         booking.setStatus("PENDING");
+        System.out.println("Saving booking for user: " + booking.getUserId());
         return bookingRepository.save(booking);
     }
 
@@ -46,6 +47,10 @@ public class BookingService {
 
     public List<Booking> getBookingsByUserId(Long userId) {
         return bookingRepository.findByUserId(userId);
+    }
+
+    public List<Booking> getPendingBookings() {
+        return bookingRepository.findByStatus("PENDING");
     }
 
     public Booking approveBooking(Long id) {

@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { getAllBookings, approveBooking, rejectBooking, getResources } from '../services/api';
+import { getPendingBookings, approveBooking, rejectBooking, getResources } from '../services/api';
 import { getUser } from '../utils/auth';
 
 export default function AdminOps() {
@@ -27,7 +27,7 @@ export default function AdminOps() {
         try {
             setLoading(true);
             const [bookingsData, resourcesData] = await Promise.all([
-                getAllBookings(),
+                getPendingBookings(),
                 getResources()
             ]);
 
@@ -82,7 +82,7 @@ export default function AdminOps() {
     };
 
     const processedPendingBookings = useMemo(() => {
-        let pending = bookings.filter(b => b.status === 'PENDING');
+        let pending = [...bookings];
         
         if (searchQuery.trim() !== '') {
             const query = searchQuery.toLowerCase();
