@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { getResources } from '../services/api';
+import { isAdmin } from '../utils/auth';
 
 export default function Resources() {
     const [resources, setResources] = useState([]);
@@ -12,7 +13,7 @@ export default function Resources() {
         loadResources();
     }, []);
 
-    const loadResources = async () => {
+    async function loadResources() {
         try {
             setLoading(true);
             const data = await getResources();
@@ -115,15 +116,21 @@ export default function Resources() {
                                     </div>
                                 </div>
                             </div>
-                            <Link 
-                                to={`/book/${item.id}`}
-                                className={`block text-center w-full py-3 rounded-xl font-semibold text-sm transition-colors font-body
-                                    ${item.status === 'ACTIVE' || item.status === 'AVAILABLE' 
-                                        ? 'bg-surface-container text-primary hover:bg-primary hover:text-on-primary' 
-                                        : 'border border-outline-variant text-primary hover:bg-surface-container pointer-events-none opacity-50'}`}
-                            >
-                                Book Now
-                            </Link>
+                            {!isAdmin() ? (
+                                <Link 
+                                    to={`/book/${item.id}`}
+                                    className={`block text-center w-full py-3 rounded-xl font-semibold text-sm transition-colors font-body
+                                        ${item.status === 'ACTIVE' || item.status === 'AVAILABLE' 
+                                            ? 'bg-surface-container text-primary hover:bg-primary hover:text-on-primary' 
+                                            : 'border border-outline-variant text-primary hover:bg-surface-container pointer-events-none opacity-50'}`}
+                                >
+                                    Book Now
+                                </Link>
+                            ) : (
+                                <div className="block text-center w-full py-3 rounded-xl font-semibold text-sm font-body bg-surface-container text-on-surface-variant opacity-70">
+                                    Read Only (Admin)
+                                </div>
+                            )}
                         </article>
                     ))}
                     
