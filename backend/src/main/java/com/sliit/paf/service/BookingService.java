@@ -62,7 +62,9 @@ public class BookingService {
         booking.setStatus("APPROVED");
         Booking saved = bookingRepository.save(booking);
         
-        notificationService.sendNotification("Your booking (ID: " + id + ") has been APPROVED.");
+        Resource resource = resourceRepository.findById(booking.getResourceId())
+                .orElseThrow(() -> new ResourceNotFoundException("Resource not found"));
+        notificationService.notifyBookingApproved(booking.getUserId(), id, resource.getName());
         return saved;
     }
 
@@ -72,14 +74,21 @@ public class BookingService {
         booking.setAdminReason(reason);
         Booking saved = bookingRepository.save(booking);
         
-        notificationService.sendNotification("Your booking (ID: " + id + ") has been REJECTED. Reason: " + reason);
+        Resource resource = resourceRepository.findById(booking.getResourceId())
+                .orElseThrow(() -> new ResourceNotFoundException("Resource not found"));
+        notificationService.notifyBookingRejected(booking.getUserId(), id, resource.getName(), reason);
         return saved;
     }
 
     public Booking cancelBooking(Long id) {
         Booking booking = getBookingByIdOrThrow(id);
         booking.setStatus("CANCELLED");
-        return bookingRepository.save(booking);
+        Booking saved = bookingRepository.save(booking);
+        
+        Resource resource = resourceRepository.findById(booking.getResourceId())
+                .orElseThrow(() -> new ResourceNotFoundException("Resource not found"));
+        notificationService.notifyBookingCancelled(booking.getUserId(), id, resource.getName());
+        return saved;
     }
 
     private Booking getBookingByIdOrThrow(Long id) {

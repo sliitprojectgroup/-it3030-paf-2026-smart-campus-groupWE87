@@ -4,7 +4,7 @@
 > **University**: SLIIT  
 > **Backend Framework**: Spring Boot (Java 21)  
 > **Database**: MySQL  
-> **Base URL**: `http://localhost:8080`  
+> **Base URL**: `http://localhost:8085`  
 > **CORS**: Enabled for all origins (`@CrossOrigin(origins = "*")`)  
 > **Date Generated**: April 2026
 
