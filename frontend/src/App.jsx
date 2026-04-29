@@ -13,6 +13,7 @@ import CreateTicket from './pages/CreateTicket';
 import AdminResourceOps from './pages/AdminResourceOps';
 import Login from './pages/Login';
 import PendingBookings from './pages/PendingBookings';
+import NotificationSettings from './pages/NotificationSettings';
 
 const ProtectedRoute = ({ children, adminOnly = false }) => {
     const role = getRole();
@@ -41,6 +42,7 @@ function App() {
           <Route path="admin-resources" element={<ProtectedRoute adminOnly><AdminResourceOps /></ProtectedRoute>} />
           <Route path="tickets" element={<TicketList />} />
           <Route path="report-issue" element={<CreateTicket />} />
+          <Route path="settings/notifications" element={<NotificationSettings />} />
         </Route>
       </Routes>
     </BrowserRouter>

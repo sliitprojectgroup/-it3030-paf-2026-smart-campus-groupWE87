@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { getPendingBookings, approveBooking, rejectBooking, getResources } from '../services/api';
 import toast from 'react-hot-toast';
 import { getUser } from '../utils/auth';
+import { notify } from '../utils/notifications';
 
 export default function AdminOps() {
     const [bookings, setBookings] = useState([]);
@@ -39,10 +40,13 @@ export default function AdminOps() {
                 });
             }
 
-            const mergedBookings = bookingsData.map(b => ({
+            const mergedBookings = Array.isArray(bookingsData) ? bookingsData.map(b => ({
                 ...b,
                 resource: resourceMap[b.resourceId] || null
-            }));
+            })) : bookingsData && bookingsData.value ? bookingsData.value.map(b => ({
+                ...b,
+                resource: resourceMap[b.resourceId] || null
+            })) : []; 
 
             setBookings(mergedBookings);
             setError(null);
@@ -57,7 +61,7 @@ export default function AdminOps() {
         try {
             await approveBooking(id);
             setBookings(bookings.map(b => (b.id === id ? { ...b, status: 'APPROVED' } : b)));
-            toast.success("Booking approved successfully");
+            notify({ message: "Booking approved successfully", type: "approved" });
         } catch (err) {
             toast.error("Failed to approve booking");
         }
@@ -78,7 +82,7 @@ export default function AdminOps() {
             await rejectBooking(selectedBookingId, rejectReason);
             setBookings(bookings.map(b => (b.id === selectedBookingId ? { ...b, status: 'REJECTED' } : b)));
             setShowRejectModal(false);
-            toast.success("Booking rejected");
+            notify({ message: "Booking rejected", type: "rejected" });
         } catch (err) {
             toast.error("Failed to reject booking");
         }
