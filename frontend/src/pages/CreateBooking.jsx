@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { createBooking, getResources, getBookingsByDateAndResource } from '../services/api';
 import toast from 'react-hot-toast';
+import { notify } from '../utils/notifications';
 
 const ALL_SLOTS = [
     "08:00", "08:30", "09:00", "09:30", "10:00", "10:30", 
@@ -188,7 +189,7 @@ export default function CreateBooking() {
             
             await createBooking(bookingData);
             setSuccess(true);
-            toast.success("Booking request submitted");
+            notify({ message: "Booking request submitted", type: "created" });
             setTimeout(() => {
                 navigate('/my-bookings');
             }, 1500);
