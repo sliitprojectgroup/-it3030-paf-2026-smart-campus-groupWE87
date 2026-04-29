@@ -1,77 +1,131 @@
 import { Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import { getUserBookings } from '../services/api';
+import { getAllBookings } from '../services/api';
 import { getUser } from '../utils/auth';
 
 export default function Dashboard() {
-    const [stats, setStats] = useState({ approved: 0, pending: 0, total: 0 });
+    const [bookings, setBookings] = useState([]);
+    const [metrics, setMetrics] = useState({
+        total: 0,
+        pending: 0,
+        topResource: 'N/A',
+        peakTime: 'N/A',
+        approvalRate: 0
+    });
+    
     const user = getUser();
-    const firstName = user?.name ? user.name.split(' ')[0] : 'User';
-    const userId = user?.id || 1;
+    const firstName = user?.name ? user.name.split(' ')[0] : 'Admin';
 
     useEffect(() => {
-        const fetchStats = async () => {
+        const fetchAndCalculateMetrics = async () => {
             try {
-                const bookings = await getUserBookings(userId);
-                const approved = bookings.filter(b => b.status === 'APPROVED').length;
-                const pending = bookings.filter(b => b.status === 'PENDING').length;
-                setStats({ approved, pending, total: bookings.length });
+                const allBookings = await getAllBookings();
+                setBookings(allBookings);
+
+                const total = allBookings.length;
+                if (total === 0) return;
+
+                const pending = allBookings.filter(b => b.status === "PENDING").length;
+                const approved = allBookings.filter(b => b.status === "APPROVED").length;
+                const approvalRate = ((approved / total) * 100).toFixed(1);
+
+                // Calculate Top Resource
+                const resourceCounts = {};
+                allBookings.forEach(b => {
+                    const rName = b.resource?.name || `Resource #${b.resourceId}`;
+                    resourceCounts[rName] = (resourceCounts[rName] || 0) + 1;
+                });
+                const topResource = Object.keys(resourceCounts).reduce((a, b) => resourceCounts[a] > resourceCounts[b] ? a : b, 'N/A');
+
+                // Calculate Peak Time
+                const hourCounts = {};
+                allBookings.forEach(b => {
+                    if (b.startTime) {
+                        const hour = b.startTime.split(':')[0];
+                        hourCounts[hour] = (hourCounts[hour] || 0) + 1;
+                    }
+                });
+                const peakHour = Object.keys(hourCounts).length > 0 
+                    ? Object.keys(hourCounts).reduce((a, b) => hourCounts[a] > hourCounts[b] ? a : b)
+                    : null;
+                const peakTime = peakHour ? `${peakHour}:00` : 'N/A';
+
+                setMetrics({ total, pending, topResource, peakTime, approvalRate });
             } catch (error) {
                 console.error("Failed to load dashboard stats", error);
             }
         };
-        fetchStats();
+        fetchAndCalculateMetrics();
     }, []);
+
     return (
         <div className="px-4 md:px-8 max-w-7xl mx-auto flex flex-col gap-10 pb-12">
             {/* Hero / Welcome Section */}
-            <section className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-primary to-primary-container p-8 md:p-12 text-on-primary shadow-[0px_20px_40px_rgba(0,27,68,0.06)] mt-8 md:mt-10">
+            <section className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-primary to-primary-container p-6 md:p-8 text-on-primary shadow-sm mt-4 md:mt-6">
                 <div className="relative z-10 max-w-2xl">
-                    <p className="font-inter text-primary-fixed-dim text-sm font-medium tracking-wide uppercase mb-2">Student Portal</p>
-                    <h2 className="font-headline text-4xl md:text-5xl font-extrabold tracking-tight mb-4 text-surface-bright">Welcome, {firstName}</h2>
-                    <p className="font-body text-inverse-on-surface text-base md:text-lg max-w-xl opacity-90 leading-relaxed">Here is a summary of your campus activities and upcoming reservations for today.</p>
+                    <p className="font-inter text-primary-fixed-dim text-xs font-medium tracking-wide uppercase mb-1">Student Portal</p>
+                    <h2 className="font-headline text-2xl md:text-3xl font-extrabold tracking-tight mb-2 text-surface-bright">Welcome, {firstName}</h2>
+                    <p className="font-body text-inverse-on-surface text-sm md:text-base max-w-xl opacity-90 leading-relaxed">Here is a summary of your campus activities and upcoming reservations for today.</p>
                 </div>
                 {/* Abstract decorative element */}
-                <div className="absolute right-0 bottom-0 w-64 h-64 bg-secondary-fixed opacity-10 rounded-tl-full blur-3xl pointer-events-none"></div>
-                <div className="absolute right-32 top-0 w-48 h-48 bg-primary-fixed opacity-10 rounded-b-full blur-2xl pointer-events-none"></div>
+                <div className="absolute right-0 bottom-0 w-48 h-48 bg-secondary-fixed opacity-10 rounded-tl-full blur-3xl pointer-events-none"></div>
+                <div className="absolute right-32 top-0 w-32 h-32 bg-primary-fixed opacity-10 rounded-b-full blur-2xl pointer-events-none"></div>
             </section>
 
             {/* Grid Layout */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* Left Column (Stats & Quick Actions) */}
                 <div className="lg:col-span-2 flex flex-col gap-8">
-                    {/* Booking Summary (Bento Style) */}
+                    {/* Analytics Summary */}
                     <section>
-                        <h3 className="font-headline text-xl font-bold text-primary mb-6">Upcoming Bookings</h3>
+                        <h3 className="font-headline text-xl font-bold text-primary mb-6">Booking Analytics</h3>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            {/* Approved Card */}
-                            <div className="bg-surface-container-lowest rounded-xl p-6 flex items-start justify-between shadow-sm group transition-all hover:shadow-md border border-outline-variant/20">
-                                <div>
-                                    <div className="flex items-center gap-2 mb-4">
-                                        <div className="w-8 h-8 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center">
-                                            <span className="material-symbols-outlined text-[18px]">check_circle</span>
-                                        </div>
-                                        <span className="font-label text-sm font-medium text-on-surface-variant">Approved</span>
+                            {/* Total Bookings Card */}
+                            <div className="bg-surface-container-lowest rounded-xl p-6 flex flex-col justify-between shadow-sm border border-outline-variant/20 hover:shadow-md transition-shadow">
+                                <div className="flex items-center justify-between mb-4">
+                                    <span className="font-label text-sm font-medium text-on-surface-variant">Total Bookings</span>
+                                    <div className="w-8 h-8 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center">
+                                        <span className="material-symbols-outlined text-[18px]">bar_chart</span>
                                     </div>
-                                    <div className="font-headline text-4xl font-extrabold text-primary mb-1">{stats.approved}</div>
-                                    <p className="font-body text-sm text-on-surface-variant">Reservations confirmed</p>
                                 </div>
-                                <span className="material-symbols-outlined text-outline-variant group-hover:text-primary transition-colors">arrow_forward</span>
+                                <div className="font-headline text-4xl font-extrabold text-primary">{metrics.total}</div>
+                                <p className="font-body text-xs text-on-surface-variant mt-2">Overall reservations</p>
                             </div>
 
-                            {/* Pending Card */}
-                            <div className="bg-surface-container-lowest rounded-xl p-6 flex items-start justify-between shadow-sm group transition-all hover:shadow-md border border-outline-variant/20">
-                                <div>
-                                    <div className="flex items-center gap-2 mb-4">
-                                        <div className="w-8 h-8 rounded-full bg-tertiary-fixed-dim/20 text-on-tertiary-fixed flex items-center justify-center">
-                                            <span className="material-symbols-outlined text-[18px]">schedule</span>
-                                        </div>
-                                        <span className="font-label text-sm font-medium text-on-surface-variant">Pending</span>
+                            {/* Pending Requests Card */}
+                            <div className="bg-surface-container-lowest rounded-xl p-6 flex flex-col justify-between shadow-sm border border-outline-variant/20 hover:shadow-md transition-shadow">
+                                <div className="flex items-center justify-between mb-4">
+                                    <span className="font-label text-sm font-medium text-on-surface-variant">Pending Requests</span>
+                                    <div className="w-8 h-8 rounded-full bg-tertiary-fixed-dim/20 text-on-tertiary-fixed flex items-center justify-center">
+                                        <span className="material-symbols-outlined text-[18px]">schedule</span>
                                     </div>
-                                    <div className="font-headline text-4xl font-extrabold text-primary mb-1">{stats.pending}</div>
-                                    <p className="font-body text-sm text-on-surface-variant">Awaiting approval</p>
                                 </div>
-                                <span className="material-symbols-outlined text-outline-variant group-hover:text-primary transition-colors">arrow_forward</span>
+                                <div className="font-headline text-4xl font-extrabold text-primary">{metrics.pending}</div>
+                                <p className="font-body text-xs text-on-surface-variant mt-2">Awaiting approval</p>
+                            </div>
+
+                            {/* Top Resource Card */}
+                            <div className="bg-surface-container-lowest rounded-xl p-6 flex flex-col justify-between shadow-sm border border-outline-variant/20 hover:shadow-md transition-shadow">
+                                <div className="flex items-center justify-between mb-4">
+                                    <span className="font-label text-sm font-medium text-on-surface-variant">Top Resource</span>
+                                    <div className="w-8 h-8 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center">
+                                        <span className="material-symbols-outlined text-[18px]">star</span>
+                                    </div>
+                                </div>
+                                <div className="font-headline text-2xl font-bold text-primary truncate" title={metrics.topResource}>{metrics.topResource}</div>
+                                <p className="font-body text-xs text-on-surface-variant mt-2">Most frequently booked</p>
+                            </div>
+
+                            {/* Peak Time Card */}
+                            <div className="bg-surface-container-lowest rounded-xl p-6 flex flex-col justify-between shadow-sm border border-outline-variant/20 hover:shadow-md transition-shadow">
+                                <div className="flex items-center justify-between mb-4">
+                                    <span className="font-label text-sm font-medium text-on-surface-variant">Peak Time</span>
+                                    <div className="w-8 h-8 rounded-full bg-error-container text-on-error-container flex items-center justify-center">
+                                        <span className="material-symbols-outlined text-[18px]">trending_up</span>
+                                    </div>
+                                </div>
+                                <div className="font-headline text-2xl font-bold text-primary">{metrics.peakTime}</div>
+                                <p className="font-body text-xs text-on-surface-variant mt-2">Approval Rate: {metrics.approvalRate}%</p>
                             </div>
                         </div>
                     </section>
@@ -101,6 +155,34 @@ export default function Dashboard() {
                                 </div>
                                 <span className="material-symbols-outlined absolute -bottom-4 -right-4 text-7xl text-surface-container-highest/50 pointer-events-none group-hover:text-surface-container-highest transition-colors">report_problem</span>
                             </Link>
+                        </div>
+                    </section>
+
+                    {/* Simple Bar Chart: Bookings per Hour */}
+                    <section>
+                        <h3 className="font-headline text-xl font-bold text-primary mb-6">Bookings Over Time</h3>
+                        <div className="bg-surface-container-lowest rounded-xl p-6 shadow-sm border border-outline-variant/20">
+                            <div className="flex items-end h-40 gap-2 w-full mt-4">
+                                {Array.from({ length: 24 }).map((_, hour) => {
+                                    const count = bookings.filter(b => b.startTime && b.startTime.startsWith(hour.toString().padStart(2, '0'))).length;
+                                    const maxCount = Math.max(...Array.from({ length: 24 }).map((_, h) => bookings.filter(b => b.startTime && b.startTime.startsWith(h.toString().padStart(2, '0'))).length)) || 1;
+                                    const heightPercentage = (count / maxCount) * 100;
+                                    
+                                    return (
+                                        <div key={hour} className="flex-1 flex flex-col items-center gap-2 group relative">
+                                            <div className="w-full bg-primary/20 rounded-t-sm" style={{ height: `${heightPercentage}%`, minHeight: count > 0 ? '4px' : '0' }}></div>
+                                            <span className="text-[10px] text-on-surface-variant">{hour}h</span>
+                                            
+                                            {/* Tooltip */}
+                                            {count > 0 && (
+                                                <div className="absolute -top-8 bg-surface-container text-on-surface text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10">
+                                                    {count} bookings
+                                                </div>
+                                            )}
+                                        </div>
+                                    );
+                                })}
+                            </div>
                         </div>
                     </section>
                 </div>
