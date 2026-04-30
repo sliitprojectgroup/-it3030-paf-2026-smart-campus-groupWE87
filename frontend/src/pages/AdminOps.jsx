@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 import { getPendingBookings, approveBooking, rejectBooking, getResources } from '../services/api';
 import toast from 'react-hot-toast';
 import { getUser } from '../utils/auth';
-import { notify } from '../utils/notifications';
 
 export default function AdminOps() {
     const [bookings, setBookings] = useState([]);
@@ -61,7 +60,7 @@ export default function AdminOps() {
         try {
             await approveBooking(id);
             setBookings(bookings.map(b => (b.id === id ? { ...b, status: 'APPROVED' } : b)));
-            notify({ message: "Booking approved successfully", type: "approved" });
+            toast.success("Booking approved successfully");
         } catch (err) {
             toast.error("Failed to approve booking");
         }
@@ -82,7 +81,7 @@ export default function AdminOps() {
             await rejectBooking(selectedBookingId, rejectReason);
             setBookings(bookings.map(b => (b.id === selectedBookingId ? { ...b, status: 'REJECTED' } : b)));
             setShowRejectModal(false);
-            notify({ message: "Booking rejected", type: "rejected" });
+            toast.success("Booking rejected");
         } catch (err) {
             toast.error("Failed to reject booking");
         }
