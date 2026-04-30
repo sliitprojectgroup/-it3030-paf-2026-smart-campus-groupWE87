@@ -56,7 +56,7 @@ export default function PendingBookings() {
             setBookings(bookings.filter(b => b.id !== id));
             toast.success("Booking approved successfully");
         } catch (err) {
-            toast.error("Failed to approve booking");
+            toast.error(err.response?.data?.message || "Failed to approve booking");
         }
     };
 
@@ -78,7 +78,7 @@ export default function PendingBookings() {
             setShowRejectModal(false);
             toast.success("Booking rejected");
         } catch (err) {
-            toast.error("Failed to reject booking");
+            toast.error(err.response?.data?.message || "Failed to reject booking");
         }
     };
 

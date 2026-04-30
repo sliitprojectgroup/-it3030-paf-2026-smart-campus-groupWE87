@@ -59,6 +59,13 @@ public class Booking {
     @Column(nullable = false)
     private Boolean checkedIn = false;
 
+    @PrePersist
+    public void applyDefaults() {
+        if (checkedIn == null) {
+            checkedIn = false;
+        }
+    }
+
     @org.hibernate.annotations.CreationTimestamp
     @Column(updatable = false)
     private java.time.LocalDateTime createdAt;

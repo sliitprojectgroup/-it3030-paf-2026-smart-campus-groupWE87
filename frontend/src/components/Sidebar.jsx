@@ -4,7 +4,8 @@ import { isAdmin } from '../utils/auth';
 export default function Sidebar({ isOpen, onClose }) {
     const baseNavItems = [
         { name: 'Dashboard', icon: 'dashboard', path: '/' },
-        { name: 'Resources', icon: 'inventory_2', path: '/resources' }
+        { name: 'Resources', icon: 'inventory_2', path: '/resources' },
+        { name: 'Notifications', icon: 'notifications', path: '/notifications' }
     ];
     
     const userItems = [

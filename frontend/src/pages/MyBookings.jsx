@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
-import { getUserBookings, cancelBooking, getAllBookings, getResources } from '../services/api';
+import { getUserBookings, cancelBooking, getAllBookings, getResources, loginUser } from '../services/api';
 import toast from 'react-hot-toast';
-import { getRole, isAdmin, getUser } from '../utils/auth';
+import { getDemoCredentialsForUser, isAdmin, getUserId, setUser } from '../utils/auth';
 
 export default function MyBookings() {
     const [bookings, setBookings] = useState([]);
@@ -13,6 +13,18 @@ export default function MyBookings() {
     const [sortBy, setSortBy] = useState('booking_newest');
     const [searchQuery, setSearchQuery] = useState('');
     const [itemsPerPage, setItemsPerPage] = useState(5);
+
+    const getCurrentBackendUserId = async () => {
+        const credentials = getDemoCredentialsForUser();
+        if (!credentials) return getUserId();
+        try {
+            const backendUser = await loginUser(credentials);
+            setUser(backendUser);
+            return backendUser.id;
+        } catch {
+            return getUserId();
+        }
+    };
 
     // Derived states
     const processedBookings = useMemo(() => {
@@ -61,6 +73,7 @@ export default function MyBookings() {
     const paginatedBookings = processedBookings.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setCurrentPage(1);
     }, [filterStatus, sortBy, searchQuery]);
 
@@ -68,7 +81,13 @@ export default function MyBookings() {
         const fetchData = async () => {
             try {
                 setLoading(true);
-                const userId = parseInt(localStorage.getItem('userId')) || 1;
+                const userId = await getCurrentBackendUserId();
+                if (!isAdmin() && !userId) {
+                    setError('Please log in again to load your bookings.');
+                    setBookings([]);
+                    return;
+                }
+
                 let bookingsPromise = isAdmin() ? getAllBookings() : getUserBookings(userId);
                 
                 const [bookingsData, resourcesData] = await Promise.all([
@@ -106,7 +125,7 @@ export default function MyBookings() {
             await cancelBooking(id);
             setBookings(bookings.map(b => (b.id === id || b.bookingId === id) ? { ...b, status: 'CANCELLED' } : b));
             toast.success("Booking cancelled");
-        } catch (err) {
+        } catch {
             toast.error('Failed to cancel booking');
         }
     };
