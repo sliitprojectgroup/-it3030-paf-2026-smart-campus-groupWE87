@@ -2,7 +2,6 @@ import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { getPendingBookings, approveBooking, rejectBooking, getResources } from '../services/api';
 import toast from 'react-hot-toast';
-import { notify } from '../utils/notifications';
 
 export default function PendingBookings() {
     const [bookings, setBookings] = useState([]);
@@ -55,7 +54,7 @@ export default function PendingBookings() {
             await approveBooking(id);
             // Remove from the pending list once approved
             setBookings(bookings.filter(b => b.id !== id));
-            notify({ message: "Booking approved successfully", type: "approved" });
+            toast.success("Booking approved successfully");
         } catch (err) {
             toast.error(err.response?.data?.message || "Failed to approve booking");
         }
@@ -77,7 +76,7 @@ export default function PendingBookings() {
             // Remove from the pending list once rejected
             setBookings(bookings.filter(b => b.id !== selectedBookingId));
             setShowRejectModal(false);
-            notify({ message: "Booking rejected", type: "rejected" });
+            toast.success("Booking rejected");
         } catch (err) {
             toast.error(err.response?.data?.message || "Failed to reject booking");
         }
