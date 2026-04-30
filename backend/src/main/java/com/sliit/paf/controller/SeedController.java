@@ -16,14 +16,15 @@ import java.util.Random;
 
 @RestController
 @RequestMapping("/api/seed")
-@CrossOrigin(origins = "*") 
+@CrossOrigin(origins = "*")
 public class SeedController {
 
     private final ResourceRepository resourceRepository;
     private final BookingRepository bookingRepository;
     private final TicketRepository ticketRepository;
 
-    public SeedController(ResourceRepository resourceRepository, BookingRepository bookingRepository, TicketRepository ticketRepository) {
+    public SeedController(ResourceRepository resourceRepository, BookingRepository bookingRepository,
+            TicketRepository ticketRepository) {
         this.resourceRepository = resourceRepository;
         this.bookingRepository = bookingRepository;
         this.ticketRepository = ticketRepository;
@@ -90,35 +91,36 @@ public class SeedController {
 
     private void doSeedBookings() {
         List<Resource> allResources = resourceRepository.findAll();
-        if (allResources.isEmpty()) return;
+        if (allResources.isEmpty())
+            return;
 
         List<Booking> bookings = new ArrayList<>();
         Random random = new Random();
-        
+
         String[] purposes = {
-            "Lecture", "Group Study", "Meeting", "Lab Work", 
-            "Exam Prep", "Guest Lecture", "Equipment Testing"
+                "Lecture", "Group Study", "Meeting", "Lab Work",
+                "Exam Prep", "Guest Lecture", "Equipment Testing"
         };
-        
+
         for (int i = 0; i < 30; i++) {
             Resource randomResource = allResources.get(random.nextInt(allResources.size()));
-            
+
             // Dates spread across past and future
             int dayOffset = random.nextInt(21) - 5;
             LocalDate date = LocalDate.now().plusDays(dayOffset);
-            
+
             // Valid time ranges
             int startHour = 8 + random.nextInt(9);
             LocalTime startTime = LocalTime.of(startHour, 0);
             LocalTime endTime = startTime.plusHours(1 + random.nextInt(3)); // endTime > startTime
-            
+
             String purpose = purposes[random.nextInt(purposes.length)];
             int attendees = 1 + random.nextInt(randomResource.getCapacity());
-            
+
             int statusRoll = random.nextInt(100);
             String status;
             String adminReason = null;
-            
+
             if (statusRoll < 40) {
                 status = "PENDING";
             } else if (statusRoll < 80) {
@@ -129,9 +131,9 @@ public class SeedController {
             }
 
             Booking booking = new Booking(
-                null, 1L, randomResource.getId(), date, startTime, endTime, purpose, attendees, status, adminReason, java.time.LocalDateTime.now().minusDays(random.nextInt(5))
-            );
-            
+                    null, 1L, randomResource.getId(), date, startTime, endTime, purpose, attendees, status, adminReason,
+                    false, java.time.LocalDateTime.now().minusDays(random.nextInt(5)));
+
             bookings.add(booking);
         }
 

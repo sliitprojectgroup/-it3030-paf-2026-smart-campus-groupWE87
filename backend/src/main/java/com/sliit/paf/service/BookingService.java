@@ -38,6 +38,9 @@ public class BookingService {
 
         booking.setStatus("PENDING");
         System.out.println("Saving booking for user: " + booking.getUserId());
+        // ensure checkedIn is non-null for DB (column is NOT NULL)
+        booking.setCheckedIn(false);
+        System.out.println("checkedIn before save: " + booking.getCheckedIn());
         return bookingRepository.save(booking);
     }
 
@@ -61,7 +64,7 @@ public class BookingService {
         Booking booking = getBookingByIdOrThrow(id);
         booking.setStatus("APPROVED");
         Booking saved = bookingRepository.save(booking);
-        
+
         notificationService.sendNotification("Your booking (ID: " + id + ") has been APPROVED.");
         return saved;
     }
@@ -71,7 +74,7 @@ public class BookingService {
         booking.setStatus("REJECTED");
         booking.setAdminReason(reason);
         Booking saved = bookingRepository.save(booking);
-        
+
         notificationService.sendNotification("Your booking (ID: " + id + ") has been REJECTED. Reason: " + reason);
         return saved;
     }
