@@ -8,12 +8,12 @@ import Resources from './pages/Resources';
 import CreateBooking from './pages/CreateBooking';
 import MyBookings from './pages/MyBookings';
 import AdminOps from './pages/AdminOps';
-import TicketList from './pages/TicketList';
-import CreateTicket from './pages/CreateTicket';
+import TicketListPage from './pages/TicketListPage';
+import CreateTicketPage from './pages/CreateTicketPage';
+import TicketDetailPage from './pages/TicketDetailPage';
 import AdminResourceOps from './pages/AdminResourceOps';
 import Login from './pages/Login';
 import PendingBookings from './pages/PendingBookings';
-import NotificationSettings from './pages/NotificationSettings';
 
 const ProtectedRoute = ({ children, adminOnly = false }) => {
     const role = getRole();
@@ -40,9 +40,9 @@ function App() {
           <Route path="admin" element={<ProtectedRoute adminOnly><AdminOps /></ProtectedRoute>} />
           <Route path="admin/pending-bookings" element={<ProtectedRoute adminOnly><PendingBookings /></ProtectedRoute>} />
           <Route path="admin-resources" element={<ProtectedRoute adminOnly><AdminResourceOps /></ProtectedRoute>} />
-          <Route path="tickets" element={<TicketList />} />
-          <Route path="report-issue" element={<CreateTicket />} />
-          <Route path="settings/notifications" element={<NotificationSettings />} />
+          <Route path="tickets" element={<TicketListPage />} />
+          <Route path="create-ticket" element={<CreateTicketPage />} />
+          <Route path="ticket/:id" element={<TicketDetailPage />} />
         </Route>
       </Routes>
     </BrowserRouter>

@@ -36,5 +36,26 @@ export const cancelBooking = (id) => api.put(`/bookings/${id}/cancel`);
 // Tickets
 export const createTicket = (data) => api.post('/tickets', data);
 export const getTickets = () => api.get('/tickets');
+export const getTicketById = (id) => api.get(`/tickets/${id}`);
+export const getUserTickets = (userId) => api.get(`/tickets/user/${userId}`);
+export const updateTicketStatus = (id, status) => api.put(`/tickets/${id}/status`, { status });
+export const assignTechnician = (id, technicianId) => api.put(`/tickets/${id}/assign`, { technicianId });
+export const addResolutionNotes = (id, resolutionNotes) => api.put(`/tickets/${id}/resolve`, { resolutionNotes });
+export const rejectTicket = (id, rejectionReason) => api.put(`/tickets/${id}/reject`, { rejectionReason });
+export const closeTicket = (id) => api.put(`/tickets/${id}/close`);
+export const deleteTicket = (id) => api.delete(`/tickets/${id}`);
+export const uploadTicketAttachments = (id, files) => {
+    const formData = new FormData();
+    files.forEach(file => formData.append('files', file));
+    return axios.post(`http://localhost:8080/api/tickets/${id}/attachments`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+    });
+};
+
+// Comments
+export const addComment = (ticketId, comment) => api.post(`/tickets/${ticketId}/comments`, comment);
+export const getCommentsByTicket = (ticketId) => api.get(`/tickets/${ticketId}/comments`);
+export const editComment = (id, content, userId) => api.put(`/tickets/comments/${id}`, { content, userId });
+export const deleteComment = (id, userId) => api.delete(`/tickets/comments/${id}`, { params: { userId } });
 
 export default api;

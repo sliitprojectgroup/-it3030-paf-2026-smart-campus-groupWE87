@@ -8,13 +8,15 @@ export default function Sidebar({ isOpen, onClose }) {
     ];
     
     const userItems = [
-        { name: 'My Bookings', icon: 'event_available', path: '/my-bookings' }
+        { name: 'My Bookings', icon: 'event_available', path: '/my-bookings' },
+        { name: 'Support Tickets', icon: 'support_agent', path: '/tickets' }
     ];
 
     const adminItems = [
         { name: 'Pending Approvals', icon: 'admin_panel_settings', path: '/admin' },
         { name: 'All Requests', icon: 'event_available', path: '/my-bookings' },
-        { name: 'Admin Resources', icon: 'settings_applications', path: '/admin-resources' }
+        { name: 'Admin Resources', icon: 'settings_applications', path: '/admin-resources' },
+        { name: 'Support Tickets', icon: 'support_agent', path: '/tickets' }
     ];
 
     const navItems = isAdmin() ? [...baseNavItems, ...adminItems] : [...baseNavItems, ...userItems];
@@ -70,10 +72,14 @@ export default function Sidebar({ isOpen, onClose }) {
                 </div>
 
                 {!isAdmin() && (
-                <div className="mt-auto px-2 pb-4">
+                <div className="mt-auto px-2 pb-4 space-y-3">
                     <NavLink to="/book" onClick={() => onClose()} className="w-full flex items-center justify-center gap-2 bg-primary text-on-primary py-3 rounded-xl font-body font-medium text-sm hover:bg-primary-container transition-colors shadow-sm">
                         <span className="material-symbols-outlined text-[18px]">add</span>
-                        New Request
+                        New Booking
+                    </NavLink>
+                    <NavLink to="/create-ticket" onClick={() => onClose()} className="w-full flex items-center justify-center gap-2 bg-orange-600 text-white py-3 rounded-xl font-body font-medium text-sm hover:bg-orange-700 transition-colors shadow-sm">
+                        <span className="material-symbols-outlined text-[18px]">error</span>
+                        Report Issue
                     </NavLink>
                 </div>
                 )}
