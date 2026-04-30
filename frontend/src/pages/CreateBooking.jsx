@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { createBooking, getResources, getBookingsByDateAndResource } from '../services/api';
 import toast from 'react-hot-toast';
+import { getUserId } from '../utils/auth';
 
 const ALL_SLOTS = [
     "08:00", "08:30", "09:00", "09:30", "10:00", "10:30", 
@@ -176,8 +177,15 @@ export default function CreateBooking() {
 
         try {
             setLoading(true);
+            const userId = getUserId();
+            if (!userId) {
+                setError("Please log in again before creating a booking.");
+                toast.error("Please log in again");
+                return;
+            }
+
             const bookingData = {
-                userId: parseInt(localStorage.getItem('userId')) || 1,
+                userId,
                 resourceId: parseInt(resourceId),
                 date: formData.date,
                 startTime: actualStartTime + ":00",

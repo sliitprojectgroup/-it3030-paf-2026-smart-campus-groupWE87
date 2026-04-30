@@ -1,7 +1,7 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
-import { getRole, isAdmin } from './utils/auth';
+import { getRole, getUserId, isAdmin, setDemoUser } from './utils/auth';
 import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
 import Resources from './pages/Resources';
@@ -13,11 +13,15 @@ import CreateTicket from './pages/CreateTicket';
 import AdminResourceOps from './pages/AdminResourceOps';
 import Login from './pages/Login';
 import PendingBookings from './pages/PendingBookings';
+import Notifications from './pages/Notifications';
 
 const ProtectedRoute = ({ children, adminOnly = false }) => {
-    const role = getRole();
-    if (!role) {
-        return <Navigate to="/login" replace />;
+    let role = getRole();
+    let userId = getUserId();
+    if (!role || !userId) {
+        const user = setDemoUser('USER');
+        role = user.role;
+        userId = user.id;
     }
     if (adminOnly && !isAdmin()) {
         return <Navigate to="/" replace />;
@@ -41,6 +45,7 @@ function App() {
           <Route path="admin-resources" element={<ProtectedRoute adminOnly><AdminResourceOps /></ProtectedRoute>} />
           <Route path="tickets" element={<TicketList />} />
           <Route path="report-issue" element={<CreateTicket />} />
+          <Route path="notifications" element={<Notifications />} />
         </Route>
       </Routes>
     </BrowserRouter>

@@ -35,14 +35,16 @@ public class Notification {
     private String type;
 
     // Optional reference to the related entity (bookingId or ticketId)
+    @Column(name = "reference_id")
     private Long referenceId;
 
     // "BOOKING" or "TICKET"
+    @Column(name = "reference_type")
     private String referenceType;
 
-    @Column(nullable = false)
+    @Column(name = "is_read", nullable = false, columnDefinition = "boolean default false")
     private boolean read = false;
 
-    @Column(nullable = false)
+    @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
 }

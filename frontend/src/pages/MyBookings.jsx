@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { getUserBookings, cancelBooking, getAllBookings, getResources } from '../services/api';
 import toast from 'react-hot-toast';
-import { getRole, isAdmin, getUser } from '../utils/auth';
+import { isAdmin, getUserId } from '../utils/auth';
 
 export default function MyBookings() {
     const [bookings, setBookings] = useState([]);
@@ -61,6 +61,7 @@ export default function MyBookings() {
     const paginatedBookings = processedBookings.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setCurrentPage(1);
     }, [filterStatus, sortBy, searchQuery]);
 
@@ -68,7 +69,13 @@ export default function MyBookings() {
         const fetchData = async () => {
             try {
                 setLoading(true);
-                const userId = parseInt(localStorage.getItem('userId')) || 1;
+                const userId = getUserId();
+                if (!isAdmin() && !userId) {
+                    setError('Please log in again to load your bookings.');
+                    setBookings([]);
+                    return;
+                }
+
                 let bookingsPromise = isAdmin() ? getAllBookings() : getUserBookings(userId);
                 
                 const [bookingsData, resourcesData] = await Promise.all([
@@ -106,7 +113,7 @@ export default function MyBookings() {
             await cancelBooking(id);
             setBookings(bookings.map(b => (b.id === id || b.bookingId === id) ? { ...b, status: 'CANCELLED' } : b));
             toast.success("Booking cancelled");
-        } catch (err) {
+        } catch {
             toast.error('Failed to cancel booking');
         }
     };

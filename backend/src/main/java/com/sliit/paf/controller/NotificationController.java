@@ -1,6 +1,6 @@
 package com.sliit.paf.controller;
 
-import com.sliit.paf.model.Notification;
+import com.sliit.paf.dto.NotificationResponse;
 import com.sliit.paf.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -22,21 +22,27 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/notifications")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "http://localhost:5173") // Vite dev server
+@CrossOrigin(origins = {"http://localhost:5173", "http://127.0.0.1:5173"})
 public class NotificationController {
 
     private final NotificationService notificationService;
 
     // GET /api/notifications?userId=5
     @GetMapping
-    public ResponseEntity<List<Notification>> getAll(@RequestParam Long userId) {
-        return ResponseEntity.ok(notificationService.getNotificationsForUser(userId));
+    public ResponseEntity<List<NotificationResponse>> getAll(@RequestParam Long userId) {
+        return ResponseEntity.ok(notificationService.getNotificationsForUser(userId)
+                .stream()
+                .map(NotificationResponse::from)
+                .toList());
     }
 
     // GET /api/notifications/unread?userId=5
     @GetMapping("/unread")
-    public ResponseEntity<List<Notification>> getUnread(@RequestParam Long userId) {
-        return ResponseEntity.ok(notificationService.getUnreadNotificationsForUser(userId));
+    public ResponseEntity<List<NotificationResponse>> getUnread(@RequestParam Long userId) {
+        return ResponseEntity.ok(notificationService.getUnreadNotificationsForUser(userId)
+                .stream()
+                .map(NotificationResponse::from)
+                .toList());
     }
 
     // GET /api/notifications/count?userId=5  → { "count": 3 }
@@ -47,9 +53,9 @@ public class NotificationController {
 
     // PUT /api/notifications/5/read?userId=12
     @PutMapping("/{id}/read")
-    public ResponseEntity<Notification> markAsRead(@PathVariable Long id,
-                                                    @RequestParam Long userId) {
-        return ResponseEntity.ok(notificationService.markAsRead(id, userId));
+    public ResponseEntity<NotificationResponse> markAsRead(@PathVariable Long id,
+                                                           @RequestParam Long userId) {
+        return ResponseEntity.ok(NotificationResponse.from(notificationService.markAsRead(id, userId)));
     }
 
     // PUT /api/notifications/read-all?userId=12

@@ -22,36 +22,41 @@ public class NotificationService {
 
     private Notification create(Long recipientId, String title, String message,
                                  String type, Long referenceId, String referenceType) {
-        User recipient = userRepository.findById(recipientId)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + recipientId));
+        try {
+            User recipient = userRepository.findById(recipientId)
+                    .orElseThrow(() -> new ResourceNotFoundException("User not found: " + recipientId));
 
-        Notification n = new Notification();
-        n.setRecipient(recipient);
-        n.setTitle(title);
-        n.setMessage(message);
-        n.setType(type);
-        n.setReferenceId(referenceId);
-        n.setReferenceType(referenceType);
-        n.setRead(false);
+            Notification n = new Notification();
+            n.setRecipient(recipient);
+            n.setTitle(title);
+            n.setMessage(message);
+            n.setType(type);
+            n.setReferenceId(referenceId);
+            n.setReferenceType(referenceType);
+            n.setRead(false);
 
-        // Also log to console for debugging / dev visibility
-        System.out.printf("[NOTIFICATION] → %s | %s | %s%n", recipient.getEmail(), title, message);
+            System.out.printf("[NOTIFICATION] %s | %s | %s%n", recipient.getEmail(), title, message);
 
-        return notificationRepository.save(n);
+            return notificationRepository.save(n);
+        } catch (ResourceNotFoundException e) {
+            // Log error but don't fail the operation if user doesn't exist
+            System.err.printf("[NOTIFICATION ERROR] Failed to create notification for user %d: %s%n", recipientId, e.getMessage());
+            return null;
+        }
     }
 
     // ─── Booking notifications ────────────────────────────────────────────────
 
     public void notifyBookingApproved(Long userId, Long bookingId, String resourceName) {
         create(userId,
-                "Booking Approved ✅",
+                "Booking Approved",
                 "Your booking for \"" + resourceName + "\" has been approved.",
                 "BOOKING_APPROVED", bookingId, "BOOKING");
     }
 
     public void notifyBookingRejected(Long userId, Long bookingId, String resourceName, String reason) {
         create(userId,
-                "Booking Rejected ❌",
+                "Booking Rejected",
                 "Your booking for \"" + resourceName + "\" was rejected. Reason: " + reason,
                 "BOOKING_REJECTED", bookingId, "BOOKING");
     }

@@ -23,6 +23,9 @@ export const createResource = (data) => api.post('/resources', data);
 export const updateResource = (id, data) => api.put(`/resources/${id}`, data);
 export const deleteResource = (id) => api.delete(`/resources/${id}`);
 
+// Auth
+export const loginUser = (data) => api.post('/auth/login', data);
+
 // Bookings
 export const createBooking = (data) => api.post('/bookings', data);
 export const getUserBookings = (userId) => api.get(`/bookings/user/${userId}`);
@@ -36,5 +39,13 @@ export const cancelBooking = (id) => api.put(`/bookings/${id}/cancel`);
 // Tickets
 export const createTicket = (data) => api.post('/tickets', data);
 export const getTickets = () => api.get('/tickets');
+
+// Notifications
+export const getNotifications = (userId) => api.get('/notifications', { params: { userId } });
+export const getUnreadNotifications = (userId) => api.get('/notifications/unread', { params: { userId } });
+export const getUnreadNotificationCount = (userId) => api.get('/notifications/count', { params: { userId } });
+export const markNotificationAsRead = (id, userId) => api.put(`/notifications/${id}/read`, null, { params: { userId } });
+export const markAllNotificationsAsRead = (userId) => api.put('/notifications/read-all', null, { params: { userId } });
+export const deleteNotification = (id, userId) => api.delete(`/notifications/${id}`, { params: { userId } });
 
 export default api;

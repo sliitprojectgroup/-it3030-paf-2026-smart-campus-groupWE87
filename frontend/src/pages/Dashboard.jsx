@@ -1,27 +1,32 @@
 import { Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import { getUserBookings } from '../services/api';
-import { getUser } from '../utils/auth';
+import { getNotifications, getUserBookings } from '../services/api';
+import { getUser, getUserId } from '../utils/auth';
 
 export default function Dashboard() {
     const [stats, setStats] = useState({ approved: 0, pending: 0, total: 0 });
+    const [recentNotifications, setRecentNotifications] = useState([]);
     const user = getUser();
     const firstName = user?.name ? user.name.split(' ')[0] : 'User';
-    const userId = user?.id || 1;
+    const userId = getUserId() || user?.id || 1;
 
     useEffect(() => {
         const fetchStats = async () => {
             try {
-                const bookings = await getUserBookings(userId);
+                const [bookings, notifications] = await Promise.all([
+                    getUserBookings(userId),
+                    getNotifications(userId)
+                ]);
                 const approved = bookings.filter(b => b.status === 'APPROVED').length;
                 const pending = bookings.filter(b => b.status === 'PENDING').length;
                 setStats({ approved, pending, total: bookings.length });
+                setRecentNotifications(Array.isArray(notifications) ? notifications.slice(0, 3) : []);
             } catch (error) {
                 console.error("Failed to load dashboard stats", error);
             }
         };
         fetchStats();
-    }, []);
+    }, [userId]);
     return (
         <div className="px-4 md:px-8 max-w-7xl mx-auto flex flex-col gap-10 pb-12">
             {/* Hero / Welcome Section */}
@@ -110,23 +115,30 @@ export default function Dashboard() {
                     <section className="bg-surface-container-low rounded-xl p-6 h-full border border-outline-variant/10">
                         <div className="flex items-center justify-between mb-6">
                             <h3 className="font-headline text-xl font-bold text-primary">Recent Activity</h3>
-                            <button className="text-sm font-label text-primary font-medium hover:underline">View All</button>
+                            <Link to="/notifications" className="text-sm font-label text-primary font-medium hover:underline">View All</Link>
                         </div>
                         
                         <div className="flex flex-col gap-6">
-                            <div className="flex gap-4 relative group cursor-pointer hover:bg-surface-container-highest/30 p-2 -mx-2 rounded-lg transition-colors">
-                                <div className="absolute left-[19px] top-10 bottom-[-24px] w-px bg-surface-container-highest group-last:hidden"></div>
-                                <div className="relative z-10 w-10 h-10 rounded-full bg-surface-container-lowest border border-outline-variant/20 flex items-center justify-center flex-shrink-0 shadow-sm">
-                                    <span className="material-symbols-outlined text-secondary text-sm">check</span>
-                                </div>
-                                <div className="pt-1">
-                                    <p className="font-body text-sm text-on-surface font-medium mb-1">Lecture Hall 1 Booking Approved</p>
-                                    <p className="font-body text-xs text-on-surface-variant mb-2">Your request was confirmed by Admin.</p>
-                                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-secondary-container/50 text-on-secondary-container text-[11px] font-semibold tracking-wide">
-                                        <span className="w-1.5 h-1.5 rounded-full bg-secondary"></span> Approved
-                                    </span>
-                                </div>
-                            </div>
+                            {recentNotifications.length === 0 ? (
+                                <p className="font-body text-sm text-on-surface-variant">No activity yet.</p>
+                            ) : recentNotifications.map((notification) => (
+                                <Link key={notification.id} to="/notifications" className="flex gap-4 relative group hover:bg-surface-container-highest/30 p-2 -mx-2 rounded-lg transition-colors">
+                                    <div className="absolute left-[19px] top-10 bottom-[-24px] w-px bg-surface-container-highest group-last:hidden"></div>
+                                    <div className="relative z-10 w-10 h-10 rounded-full bg-surface-container-lowest border border-outline-variant/20 flex items-center justify-center flex-shrink-0 shadow-sm">
+                                        <span className="material-symbols-outlined text-secondary text-sm">
+                                            {notification.referenceType === 'TICKET' ? 'confirmation_number' : 'event_available'}
+                                        </span>
+                                    </div>
+                                    <div className="pt-1 min-w-0">
+                                        <p className="font-body text-sm text-on-surface font-medium mb-1 line-clamp-1">{notification.title}</p>
+                                        <p className="font-body text-xs text-on-surface-variant mb-2 line-clamp-2">{notification.message}</p>
+                                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-secondary-container/50 text-on-secondary-container text-[11px] font-semibold tracking-wide">
+                                            <span className={`w-1.5 h-1.5 rounded-full ${notification.read ? 'bg-outline' : 'bg-secondary'}`}></span>
+                                            {notification.read ? 'Read' : 'Unread'}
+                                        </span>
+                                    </div>
+                                </Link>
+                            ))}
                         </div>
                     </section>
                 </div>
