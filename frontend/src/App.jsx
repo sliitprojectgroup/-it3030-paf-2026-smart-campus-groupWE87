@@ -15,6 +15,8 @@ import AdminResourceOps from './pages/AdminResourceOps';
 import Login from './pages/Login';
 import PendingBookings from './pages/PendingBookings';
 
+
+
 const ProtectedRoute = ({ children, adminOnly = false }) => {
     const role = getRole();
     if (!role) {
@@ -43,6 +45,9 @@ function App() {
           <Route path="tickets" element={<TicketListPage />} />
           <Route path="create-ticket" element={<CreateTicketPage />} />
           <Route path="ticket/:id" element={<TicketDetailPage />} />
+          <Route path="/tickets" element={<TicketListPage />} />
+          <Route path="/tickets/create" element={<CreateTicketPage />} />
+          <Route path="/tickets/:id" element={<TicketDetailPage />} />
         </Route>
       </Routes>
     </BrowserRouter>
