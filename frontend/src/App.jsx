@@ -14,6 +14,7 @@ import AdminResourceOps from './pages/AdminResourceOps';
 import Login from './pages/Login';
 import PendingBookings from './pages/PendingBookings';
 import Notifications from './pages/Notifications';
+import NotificationSettings from './pages/NotificationSettings';
 
 const ProtectedRoute = ({ children, adminOnly = false }) => {
     let role = getRole();
@@ -30,26 +31,27 @@ const ProtectedRoute = ({ children, adminOnly = false }) => {
 };
 
 function App() {
-  return (
-    <BrowserRouter>
-      <Toaster position="top-right" />
-      <Routes>
-        <Route path="/login" element={<Login />} />
-        <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
-          <Route index element={<Dashboard />} />
-          <Route path="resources" element={<Resources />} />
-          <Route path="book/:resourceId?" element={<CreateBooking />} />
-          <Route path="my-bookings" element={<MyBookings />} />
-          <Route path="admin" element={<ProtectedRoute adminOnly><AdminOps /></ProtectedRoute>} />
-          <Route path="admin/pending-bookings" element={<ProtectedRoute adminOnly><PendingBookings /></ProtectedRoute>} />
-          <Route path="admin-resources" element={<ProtectedRoute adminOnly><AdminResourceOps /></ProtectedRoute>} />
-          <Route path="tickets" element={<TicketList />} />
-          <Route path="report-issue" element={<CreateTicket />} />
-          <Route path="notifications" element={<Notifications />} />
-        </Route>
-      </Routes>
-    </BrowserRouter>
-  );
+    return (
+        <BrowserRouter>
+            <Toaster position="top-right" />
+            <Routes>
+                <Route path="/login" element={<Login />} />
+                <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
+                    <Route index element={<Dashboard />} />
+                    <Route path="resources" element={<Resources />} />
+                    <Route path="book/:resourceId?" element={<CreateBooking />} />
+                    <Route path="my-bookings" element={<MyBookings />} />
+                    <Route path="admin" element={<ProtectedRoute adminOnly><AdminOps /></ProtectedRoute>} />
+                    <Route path="admin/pending-bookings" element={<ProtectedRoute adminOnly><PendingBookings /></ProtectedRoute>} />
+                    <Route path="admin-resources" element={<ProtectedRoute adminOnly><AdminResourceOps /></ProtectedRoute>} />
+                    <Route path="tickets" element={<TicketList />} />
+                    <Route path="report-issue" element={<CreateTicket />} />
+                    <Route path="notifications" element={<Notifications />} />
+                    <Route path="settings/notifications" element={<NotificationSettings />} />
+                </Route>
+            </Routes>
+        </BrowserRouter>
+    );
 }
 
 export default App;

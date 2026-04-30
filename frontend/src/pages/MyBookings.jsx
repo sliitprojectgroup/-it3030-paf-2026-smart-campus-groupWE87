@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
-import { getUserBookings, cancelBooking, getAllBookings, getResources } from '../services/api';
+import { getUserBookings, cancelBooking, getAllBookings, getResources, loginUser } from '../services/api';
 import toast from 'react-hot-toast';
-import { isAdmin, getUserId } from '../utils/auth';
+import { getDemoCredentialsForUser, isAdmin, getUserId, setUser } from '../utils/auth';
 
 export default function MyBookings() {
     const [bookings, setBookings] = useState([]);
@@ -13,6 +13,18 @@ export default function MyBookings() {
     const [sortBy, setSortBy] = useState('booking_newest');
     const [searchQuery, setSearchQuery] = useState('');
     const [itemsPerPage, setItemsPerPage] = useState(5);
+
+    const getCurrentBackendUserId = async () => {
+        const credentials = getDemoCredentialsForUser();
+        if (!credentials) return getUserId();
+        try {
+            const backendUser = await loginUser(credentials);
+            setUser(backendUser);
+            return backendUser.id;
+        } catch {
+            return getUserId();
+        }
+    };
 
     // Derived states
     const processedBookings = useMemo(() => {
@@ -69,7 +81,7 @@ export default function MyBookings() {
         const fetchData = async () => {
             try {
                 setLoading(true);
-                const userId = getUserId();
+                const userId = await getCurrentBackendUserId();
                 if (!isAdmin() && !userId) {
                     setError('Please log in again to load your bookings.');
                     setBookings([]);

@@ -1,12 +1,21 @@
 import { useNavigate } from 'react-router-dom';
-import { setDemoUser } from '../utils/auth';
+import toast from 'react-hot-toast';
+import { DEMO_CREDENTIALS, setDemoUser, setUser } from '../utils/auth';
+import { loginUser } from '../services/api';
 
 export default function Login() {
     const navigate = useNavigate();
 
-    const continueAs = (role) => {
-        setDemoUser(role);
-        navigate('/');
+    const continueAs = async (role) => {
+        try {
+            const user = await loginUser(DEMO_CREDENTIALS[role]);
+            setUser(user);
+            navigate('/');
+        } catch {
+            setDemoUser(role);
+            toast.error('Backend login unavailable. Using local demo user.');
+            navigate('/');
+        }
     };
 
     return (

@@ -45,6 +45,18 @@ public class Notification {
     @Column(name = "is_read", nullable = false, columnDefinition = "boolean default false")
     private boolean read = false;
 
+    @Column(name = "read_status", nullable = false, columnDefinition = "boolean default false")
+    private boolean readStatus = false;
+
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
+
+    @PrePersist
+    @PreUpdate
+    private void applyDefaults() {
+        readStatus = read;
+        if (createdAt == null) {
+            createdAt = LocalDateTime.now();
+        }
+    }
 }

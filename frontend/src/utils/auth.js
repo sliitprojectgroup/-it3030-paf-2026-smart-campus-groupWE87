@@ -13,6 +13,17 @@ export const DEMO_USERS = {
     }
 };
 
+export const DEMO_CREDENTIALS = {
+    USER: {
+        email: 'deshan@sliit.lk',
+        password: '123'
+    },
+    ADMIN: {
+        email: 'kulitha@sliit.lk',
+        password: '123'
+    }
+};
+
 export const setUser = (user) => {
     localStorage.setItem('user', JSON.stringify(user));
     localStorage.setItem('userId', user.id);
@@ -49,3 +60,8 @@ export const clearRole = () => {
 };
 export const isAdmin = () => getRole() === 'ADMIN';
 export const isUser = () => getRole() === 'USER';
+
+export const getDemoCredentialsForUser = (user = getUser()) => {
+    if (!user?.email) return null;
+    return Object.values(DEMO_CREDENTIALS).find((credentials) => credentials.email === user.email) || null;
+};

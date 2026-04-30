@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getRole, getUser, getUserId, clearRole } from '../utils/auth';
-import { getUnreadNotificationCount, getUnreadNotifications, markNotificationAsRead } from '../services/api';
+import { getDemoCredentialsForUser, getRole, getUser, getUserId, clearRole, setUser } from '../utils/auth';
+import { getUnreadNotificationCount, getUnreadNotifications, loginUser, markNotificationAsRead } from '../services/api';
 import toast from 'react-hot-toast';
 
 export default function TopNav({ onOpenMenu }) {
@@ -21,11 +21,22 @@ export default function TopNav({ onOpenMenu }) {
     };
 
     const loadUnread = useCallback(async () => {
-        if (!userId) return;
+        let currentUserId = userId;
+        const credentials = getDemoCredentialsForUser();
+        if (credentials) {
+            try {
+                const backendUser = await loginUser(credentials);
+                setUser(backendUser);
+                currentUserId = backendUser.id;
+            } catch {
+                currentUserId = userId;
+            }
+        }
+        if (!currentUserId) return;
         try {
             const [countData, unreadData] = await Promise.all([
-                getUnreadNotificationCount(userId),
-                getUnreadNotifications(userId)
+                getUnreadNotificationCount(currentUserId),
+                getUnreadNotifications(currentUserId)
             ]);
             setUnreadCount(countData?.count || 0);
             setRecentNotifications(Array.isArray(unreadData) ? unreadData.slice(0, 4) : []);
@@ -35,7 +46,6 @@ export default function TopNav({ onOpenMenu }) {
     }, [userId]);
 
     useEffect(() => {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
         loadUnread();
         const timer = window.setInterval(loadUnread, 30000);
         const handleChanged = () => loadUnread();
@@ -59,12 +69,12 @@ export default function TopNav({ onOpenMenu }) {
     const openNotification = async (notification) => {
         try {
             if (!notification.read) {
-                await markNotificationAsRead(notification.id, userId);
+                await markNotificationAsRead(notification.id, getUserId());
                 window.dispatchEvent(new Event('notifications:changed'));
             }
             setIsNotificationsOpen(false);
             if (notification.referenceType === 'BOOKING') {
-                navigate('/my-bookings');
+                navigate(role === 'ADMIN' ? '/admin/pending-bookings' : '/my-bookings');
             } else if (notification.referenceType === 'TICKET') {
                 navigate('/tickets');
             } else {
@@ -83,15 +93,14 @@ export default function TopNav({ onOpenMenu }) {
                 </button>
                 <h2 className="font-headline font-extrabold text-xl text-primary md:hidden">Architect Hub</h2>
             </div>
-            
-            <div className="hidden md:block">
-                {/* Empty space for layout balance on desktop */}
-            </div>
 
-            <div className="flex items-center gap-4">
+            <div className="hidden md:block"></div>
+
+            <div className="flex items-center gap-4 relative">
                 <span className="font-label text-sm font-semibold !text-white bg-primary-container px-3 py-1 rounded-full hidden md:inline-block">
                     Logged in as {firstName} ({role})
                 </span>
+
                 <div className="relative" ref={dropdownRef}>
                     <button
                         onClick={() => setIsNotificationsOpen((open) => !open)}
@@ -140,8 +149,9 @@ export default function TopNav({ onOpenMenu }) {
                         </div>
                     )}
                 </div>
+
                 <div onClick={handleLogout} title="Change Role" className="w-10 h-10 rounded-full overflow-hidden border-2 border-surface-container cursor-pointer bg-primary-container text-on-primary flex items-center justify-center hover:bg-primary transition-colors">
-                     <span className="font-headline font-bold">{firstName.substring(0, 2).toUpperCase()}</span>
+                    <span className="font-headline font-bold">{firstName.substring(0, 2).toUpperCase()}</span>
                 </div>
             </div>
         </header>

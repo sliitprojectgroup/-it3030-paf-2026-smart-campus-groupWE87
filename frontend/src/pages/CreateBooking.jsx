@@ -3,25 +3,37 @@ import { useNavigate, useParams, Link } from 'react-router-dom';
 import { createBooking, getResources, getBookingsByDateAndResource } from '../services/api';
 import toast from 'react-hot-toast';
 import { getUserId } from '../utils/auth';
+import { notify } from '../utils/notifications';
+
+const getApiErrorMessage = (err, fallback = 'Something went wrong') => {
+    if (!err.response) {
+        return 'Cannot connect to backend. Please start the Spring Boot server on port 8085.';
+    }
+    const data = err.response.data;
+    if (typeof data === 'string') return data;
+    if (data?.message) return data.message;
+    if (data?.error) return data.error;
+    return fallback;
+};
 
 const ALL_SLOTS = [
-    "08:00", "08:30", "09:00", "09:30", "10:00", "10:30", 
-    "11:00", "11:30", "12:00", "12:30", "13:00", "13:30", 
-    "14:00", "14:30", "15:00", "15:30", "16:00", "16:30", 
-    "17:00", "17:30", "18:00"
+    '08:00', '08:30', '09:00', '09:30', '10:00', '10:30',
+    '11:00', '11:30', '12:00', '12:30', '13:00', '13:30',
+    '14:00', '14:30', '15:00', '15:30', '16:00', '16:30',
+    '17:00', '17:30', '18:00'
 ];
 
 export default function CreateBooking() {
     const { resourceId } = useParams();
     const navigate = useNavigate();
-    
+
     const [resource, setResource] = useState(null);
     const [formData, setFormData] = useState({
         date: '',
         purpose: '',
         attendees: ''
     });
-    
+
     const [bookedSlots, setBookedSlots] = useState([]);
     const [startSlot, setStartSlot] = useState(null);
     const [endSlot, setEndSlot] = useState(null);
@@ -34,15 +46,15 @@ export default function CreateBooking() {
         async function fetchResource() {
             try {
                 const resources = await getResources();
-                const currentResource = resources.find(r => r.id === parseInt(resourceId));
+                const currentResource = resources.find((item) => item.id === parseInt(resourceId));
                 if (currentResource) {
                     setResource(currentResource);
                 } else {
-                    setError("Resource not found.");
+                    setError('Resource not found.');
                 }
             } catch (err) {
                 console.error(err);
-                setError("Failed to load resource details.");
+                setError('Failed to load resource details.');
             }
         }
         if (resourceId) {
@@ -55,15 +67,15 @@ export default function CreateBooking() {
             if (!formData.date || !resourceId) return;
             try {
                 const bookings = await getBookingsByDateAndResource(resourceId, formData.date);
-                
+
                 const booked = new Set();
-                bookings.forEach(booking => {
+                bookings.forEach((booking) => {
                     if (booking.status !== 'REJECTED' && booking.status !== 'CANCELLED') {
                         const startIdx = ALL_SLOTS.indexOf(booking.startTime.substring(0, 5));
                         const endIdx = ALL_SLOTS.indexOf(booking.endTime.substring(0, 5));
-                        
+
                         if (startIdx !== -1 && endIdx !== -1) {
-                            for (let i = startIdx; i < endIdx; i++) {
+                            for (let i = startIdx; i < endIdx; i += 1) {
                                 booked.add(ALL_SLOTS[i]);
                             }
                         }
@@ -74,15 +86,15 @@ export default function CreateBooking() {
                 setEndSlot(null);
             } catch (err) {
                 console.error(err);
-                setError("Failed to load availability for selected date.");
+                setError('Failed to load availability for selected date.');
             }
         }
-        
+
         fetchBookings();
     }, [formData.date, resourceId]);
 
-    const handleChange = (e) => {
-        setFormData({ ...formData, [e.target.name]: e.target.value });
+    const handleChange = (event) => {
+        setFormData({ ...formData, [event.target.name]: event.target.value });
     };
 
     const handleSlotClick = (slot) => {
@@ -97,7 +109,7 @@ export default function CreateBooking() {
         }
 
         const startIdx = ALL_SLOTS.indexOf(startSlot);
-        
+
         if (slotIdx === startIdx) {
             setStartSlot(null);
             return;
@@ -109,7 +121,7 @@ export default function CreateBooking() {
         }
 
         let hasBookedInBetween = false;
-        for (let i = startIdx; i <= slotIdx; i++) {
+        for (let i = startIdx; i <= slotIdx; i += 1) {
             if (bookedSlots.includes(ALL_SLOTS[i])) {
                 hasBookedInBetween = true;
                 break;
@@ -117,7 +129,7 @@ export default function CreateBooking() {
         }
 
         if (hasBookedInBetween) {
-            setError("Cannot select continuous range containing booked slots.");
+            setError('Cannot select continuous range containing booked slots.');
             return;
         }
 
@@ -128,7 +140,7 @@ export default function CreateBooking() {
     const isSlotSelected = (slot) => {
         if (!startSlot) return false;
         if (startSlot === slot && !endSlot) return true;
-        
+
         if (startSlot && endSlot) {
             const slotIdx = ALL_SLOTS.indexOf(slot);
             const startIdx = ALL_SLOTS.indexOf(startSlot);
@@ -138,49 +150,49 @@ export default function CreateBooking() {
         return false;
     };
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
+    const handleSubmit = async (event) => {
+        event.preventDefault();
         setError(null);
         setSuccess(false);
 
         if (!resourceId) {
-            setError("No resource selected to book.");
+            setError('No resource selected to book.');
             return;
         }
 
         if (!startSlot) {
-            setError("Please select a time slot.");
+            setError('Please select a time slot.');
             return;
         }
 
         const attendeesNum = formData.attendees ? parseInt(formData.attendees) : 0;
         if (attendeesNum <= 0) {
-            setError("Attendees must be greater than 0.");
+            setError('Attendees must be greater than 0.');
             return;
         }
 
         if (resource && attendeesNum > resource.capacity) {
             setError(`Exceeds resource capacity. Maximum allowed is ${resource.capacity}`);
-            toast.error("Exceeds resource capacity");
+            toast.error('Exceeds resource capacity');
             return;
         }
 
-        let actualStartTime = startSlot;
+        const actualStartTime = startSlot;
         let actualEndTime;
         if (endSlot) {
             const endIdx = ALL_SLOTS.indexOf(endSlot);
-            actualEndTime = ALL_SLOTS[endIdx + 1] || "18:30"; 
+            actualEndTime = ALL_SLOTS[endIdx + 1] || '18:30';
         } else {
             const startIdx = ALL_SLOTS.indexOf(startSlot);
-            actualEndTime = ALL_SLOTS[startIdx + 1] || "18:30";
+            actualEndTime = ALL_SLOTS[startIdx + 1] || '18:30';
         }
 
         try {
             setLoading(true);
             const userId = getUserId();
             if (!userId) {
-                setError("Please log in again before creating a booking.");
-                toast.error("Please log in again");
+                setError('Please log in again before creating a booking.');
+                toast.error('Please log in again');
                 return;
             }
 
@@ -188,27 +200,30 @@ export default function CreateBooking() {
                 userId,
                 resourceId: parseInt(resourceId),
                 date: formData.date,
-                startTime: actualStartTime + ":00",
-                endTime: actualEndTime + ":00",
+                startTime: `${actualStartTime}:00`,
+                endTime: `${actualEndTime}:00`,
                 purpose: formData.purpose,
                 attendees: attendeesNum
             };
-            
+
             await createBooking(bookingData);
             setSuccess(true);
-            toast.success("Booking request submitted");
+            notify({ message: 'Booking request submitted', type: 'created' });
+            window.dispatchEvent(new Event('notifications:changed'));
             setTimeout(() => {
                 navigate('/my-bookings');
             }, 1500);
         } catch (err) {
-            if (err.response?.status === 409 || err.response?.data?.message?.toLowerCase().includes("booked") || err.response?.data?.message?.toLowerCase().includes("conflict")) {
-                setError(err.response?.data?.message || 'Time slot already booked');
-                toast.error("Time slot already booked");
-            } else if (err.response?.data?.message?.toLowerCase().includes("exceed")) {
-                setError(err.response?.data?.message || 'Exceeds capacity');
-                toast.error("Exceeds resource capacity");
+            const message = getApiErrorMessage(err);
+            const lowerMessage = message.toLowerCase();
+            setError(message);
+
+            if (err.response?.status === 409 || lowerMessage.includes('booked') || lowerMessage.includes('conflict')) {
+                toast.error(message || 'Time slot already booked');
+            } else if (lowerMessage.includes('exceed') || lowerMessage.includes('capacity')) {
+                toast.error(message || 'Exceeds resource capacity');
             } else {
-                setError('Something went wrong');
+                toast.error(message);
             }
         } finally {
             setLoading(false);
@@ -228,7 +243,7 @@ export default function CreateBooking() {
                     <h2 className="font-headline text-3xl md:text-4xl text-primary font-bold tracking-tight">Create Booking</h2>
                     {resource ? (
                         <p className="font-body text-on-surface-variant mt-2 max-w-2xl font-semibold">
-                            Booking: {resource.name} • {resource.type} (Capacity: {resource.capacity})
+                            Booking: {resource.name} - {resource.type} (Capacity: {resource.capacity})
                         </p>
                     ) : (
                         <p className="font-body text-on-surface-variant mt-2 max-w-2xl">Reserve resource #{resourceId || '...'} for your upcoming academic event or administrative session.</p>
@@ -262,7 +277,7 @@ export default function CreateBooking() {
                                     <label className="block font-label text-sm font-medium text-on-surface mb-2">Date</label>
                                     <input required type="date" name="date" value={formData.date} onChange={handleChange} className="w-full bg-surface-container-highest border-none rounded-lg py-3 px-4 font-body text-on-surface focus:ring-2 focus:ring-primary focus:bg-surface-container-lowest transition-all" />
                                 </div>
-                                
+
                                 {formData.date && (
                                     <div className="mt-4">
                                         <div className="flex justify-between items-center mb-4">
@@ -273,13 +288,13 @@ export default function CreateBooking() {
                                                 <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-outline-variant/30"></span> Booked</span>
                                             </div>
                                         </div>
-                                        
+
                                         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
                                             {ALL_SLOTS.map((slot, index) => {
                                                 const isBooked = bookedSlots.includes(slot);
                                                 const isSelected = isSlotSelected(slot);
-                                                const nextSlot = ALL_SLOTS[index + 1] || "18:30";
-                                                
+                                                const nextSlot = ALL_SLOTS[index + 1] || '18:30';
+
                                                 return (
                                                     <button
                                                         key={slot}
@@ -287,8 +302,8 @@ export default function CreateBooking() {
                                                         disabled={isBooked}
                                                         onClick={() => handleSlotClick(slot)}
                                                         className={`py-2 px-1 rounded-lg text-xs font-medium transition-all whitespace-nowrap ${
-                                                            isBooked ? 'bg-outline-variant/20 text-outline-variant/60 cursor-not-allowed border border-transparent' : 
-                                                            isSelected ? 'bg-primary text-on-primary border border-primary shadow-sm transform scale-[1.02]' : 
+                                                            isBooked ? 'bg-outline-variant/20 text-outline-variant/60 cursor-not-allowed border border-transparent' :
+                                                            isSelected ? 'bg-primary text-on-primary border border-primary shadow-sm transform scale-[1.02]' :
                                                             'bg-surface-container-highest text-on-surface hover:bg-surface-container-highest/80 border border-outline/20'
                                                         }`}
                                                     >
@@ -297,19 +312,19 @@ export default function CreateBooking() {
                                                 );
                                             })}
                                         </div>
-                                        
+
                                         {startSlot && (() => {
                                             const startIdx = ALL_SLOTS.indexOf(startSlot);
                                             const endIdx = endSlot ? ALL_SLOTS.indexOf(endSlot) : startIdx;
                                             const selectedSlotsList = ALL_SLOTS.slice(startIdx, endIdx + 1);
-                                            const actualEndTime = ALL_SLOTS[endIdx + 1] || "18:30";
+                                            const actualEndTime = ALL_SLOTS[endIdx + 1] || '18:30';
 
                                             return (
                                                 <div className="mt-4 p-4 bg-primary-container/30 rounded-lg flex flex-col gap-3">
                                                     <div className="flex justify-between items-center">
                                                         <span className="text-sm font-medium text-primary">Booking Time Range:</span>
                                                         <span className="text-sm font-bold text-primary">
-                                                            {startSlot} → {actualEndTime} ({selectedSlotsList.length} {selectedSlotsList.length === 1 ? 'slot' : 'slots'})
+                                                            {startSlot} - {actualEndTime} ({selectedSlotsList.length} {selectedSlotsList.length === 1 ? 'slot' : 'slots'})
                                                         </span>
                                                     </div>
                                                     <div className="flex flex-col gap-1 border-t border-primary/20 pt-2">

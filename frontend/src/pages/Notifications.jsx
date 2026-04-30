@@ -4,12 +4,15 @@ import toast from 'react-hot-toast';
 import {
     deleteNotification,
     getNotifications,
+    loginUser,
     markAllNotificationsAsRead,
     markNotificationAsRead
 } from '../services/api';
-import { getUserId } from '../utils/auth';
+import { getDemoCredentialsForUser, getUserId, isAdmin, setUser } from '../utils/auth';
 
 const typeLabels = {
+    BOOKING_CREATED: 'Booking submitted',
+    BOOKING_PENDING_APPROVAL: 'Pending approval',
     BOOKING_APPROVED: 'Booking approved',
     BOOKING_REJECTED: 'Booking rejected',
     BOOKING_CANCELLED: 'Booking cancelled',
@@ -39,12 +42,12 @@ const formatDate = (value) => {
 
 export default function Notifications() {
     const navigate = useNavigate();
-    const userId = getUserId();
     const [notifications, setNotifications] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [filter, setFilter] = useState('ALL');
     const [searchQuery, setSearchQuery] = useState('');
+    const [currentUserId, setCurrentUserId] = useState(getUserId());
 
     const unreadCount = notifications.filter((notification) => !notification.read).length;
 
@@ -70,8 +73,22 @@ export default function Notifications() {
         window.dispatchEvent(new Event('notifications:changed'));
     };
 
+    const getCurrentBackendUserId = useCallback(async () => {
+        const credentials = getDemoCredentialsForUser();
+        if (!credentials) return getUserId();
+        try {
+            const backendUser = await loginUser(credentials);
+            setUser(backendUser);
+            setCurrentUserId(backendUser.id);
+            return backendUser.id;
+        } catch {
+            return getUserId();
+        }
+    }, []);
+
     const loadNotifications = useCallback(async () => {
-        if (!userId) {
+        const currentUserId = await getCurrentBackendUserId();
+        if (!currentUserId) {
             setError('Please log in again to load notifications.');
             setLoading(false);
             return;
@@ -79,7 +96,7 @@ export default function Notifications() {
 
         try {
             setLoading(true);
-            const data = await getNotifications(userId);
+            const data = await getNotifications(currentUserId);
             setNotifications(Array.isArray(data) ? data : []);
             setError(null);
         } catch (err) {
@@ -87,7 +104,7 @@ export default function Notifications() {
         } finally {
             setLoading(false);
         }
-    }, [userId]);
+    }, [getCurrentBackendUserId]);
 
     useEffect(() => {
         // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -97,6 +114,7 @@ export default function Notifications() {
     const handleMarkAsRead = async (notification) => {
         if (notification.read) return;
         try {
+            const userId = currentUserId || await getCurrentBackendUserId();
             const updated = await markNotificationAsRead(notification.id, userId);
             setNotifications((items) => items.map((item) => item.id === notification.id ? updated : item));
             notifyChanged();
@@ -108,7 +126,7 @@ export default function Notifications() {
     const handleOpenReference = async (notification) => {
         await handleMarkAsRead(notification);
         if (notification.referenceType === 'BOOKING') {
-            navigate('/my-bookings');
+            navigate(isAdmin() ? '/admin/pending-bookings' : '/my-bookings');
         } else if (notification.referenceType === 'TICKET') {
             navigate('/tickets');
         }
@@ -117,6 +135,7 @@ export default function Notifications() {
     const handleMarkAllAsRead = async () => {
         if (unreadCount === 0) return;
         try {
+            const userId = currentUserId || await getCurrentBackendUserId();
             await markAllNotificationsAsRead(userId);
             setNotifications((items) => items.map((item) => ({ ...item, read: true })));
             notifyChanged();
@@ -128,6 +147,7 @@ export default function Notifications() {
 
     const handleDelete = async (notificationId) => {
         try {
+            const userId = currentUserId || await getCurrentBackendUserId();
             await deleteNotification(notificationId, userId);
             setNotifications((items) => items.filter((item) => item.id !== notificationId));
             notifyChanged();

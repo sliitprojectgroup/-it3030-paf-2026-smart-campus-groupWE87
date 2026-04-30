@@ -38,8 +38,8 @@ export default function Sidebar({ isOpen, onClose }) {
             `}>
                 <div className="mb-4 px-4 py-4 flex items-center justify-between">
                     <div>
-                        <h1 className="font-headline font-extrabold text-primary text-xl">Architect Hub</h1>
-                        <p className="font-body text-xs text-on-surface-variant mt-1">Smart Campus</p>
+                        <h1 className="font-headline font-extrabold text-primary text-xl">ResCore</h1>
+                        <p className="font-body text-xs text-on-surface-variant mt-1">Resource Booking</p>
                     </div>
                     <button className="md:hidden text-primary" onClick={onClose}>
                         <span className="material-symbols-outlined">close</span>

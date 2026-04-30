@@ -1,87 +1,146 @@
 import { Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import { getNotifications, getUserBookings } from '../services/api';
+import { getAllBookings, getNotifications, getUserBookings } from '../services/api';
 import { getUser, getUserId } from '../utils/auth';
 
 export default function Dashboard() {
-    const [stats, setStats] = useState({ approved: 0, pending: 0, total: 0 });
+    const [bookings, setBookings] = useState([]);
+    const [metrics, setMetrics] = useState({
+        total: 0,
+        pending: 0,
+        topResource: 'N/A',
+        peakTime: 'N/A',
+        approvalRate: 0
+    });
     const [recentNotifications, setRecentNotifications] = useState([]);
     const user = getUser();
-    const firstName = user?.name ? user.name.split(' ')[0] : 'User';
     const userId = getUserId() || user?.id || 1;
+    const firstName = user?.name ? user.name.split(' ')[0] : 'User';
 
     useEffect(() => {
-        const fetchStats = async () => {
+        const calculateMetrics = (items) => {
+            const total = items.length;
+            const pending = items.filter((booking) => booking.status === 'PENDING').length;
+            const approved = items.filter((booking) => booking.status === 'APPROVED').length;
+            const approvalRate = total > 0 ? ((approved / total) * 100).toFixed(1) : 0;
+
+            const resourceCounts = {};
+            items.forEach((booking) => {
+                const resourceName = booking.resource?.name || `Resource #${booking.resourceId}`;
+                resourceCounts[resourceName] = (resourceCounts[resourceName] || 0) + 1;
+            });
+            const topResource = Object.keys(resourceCounts).length > 0
+                ? Object.keys(resourceCounts).reduce((a, b) => resourceCounts[a] > resourceCounts[b] ? a : b)
+                : 'N/A';
+
+            const hourCounts = {};
+            items.forEach((booking) => {
+                if (booking.startTime) {
+                    const hour = booking.startTime.split(':')[0];
+                    hourCounts[hour] = (hourCounts[hour] || 0) + 1;
+                }
+            });
+            const peakHour = Object.keys(hourCounts).length > 0
+                ? Object.keys(hourCounts).reduce((a, b) => hourCounts[a] > hourCounts[b] ? a : b)
+                : null;
+
+            setMetrics({
+                total,
+                pending,
+                topResource,
+                peakTime: peakHour ? `${peakHour}:00` : 'N/A',
+                approvalRate
+            });
+        };
+
+        const fetchDashboardData = async () => {
             try {
-                const [bookings, notifications] = await Promise.all([
-                    getUserBookings(userId),
-                    getNotifications(userId)
+                const [bookingData, notificationData] = await Promise.all([
+                    getAllBookings().catch(() => getUserBookings(userId)),
+                    getNotifications(userId).catch(() => [])
                 ]);
-                const approved = bookings.filter(b => b.status === 'APPROVED').length;
-                const pending = bookings.filter(b => b.status === 'PENDING').length;
-                setStats({ approved, pending, total: bookings.length });
-                setRecentNotifications(Array.isArray(notifications) ? notifications.slice(0, 3) : []);
+                const safeBookings = Array.isArray(bookingData) ? bookingData : [];
+                setBookings(safeBookings);
+                setRecentNotifications(Array.isArray(notificationData) ? notificationData.slice(0, 3) : []);
+                calculateMetrics(safeBookings);
             } catch (error) {
-                console.error("Failed to load dashboard stats", error);
+                console.error('Failed to load dashboard stats', error);
             }
         };
-        fetchStats();
+
+        fetchDashboardData();
     }, [userId]);
+
+    const maxHourlyBookings = Math.max(
+        ...Array.from({ length: 24 }).map((_, hour) =>
+            bookings.filter((booking) => booking.startTime && booking.startTime.startsWith(hour.toString().padStart(2, '0'))).length
+        ),
+        1
+    );
+
     return (
         <div className="px-4 md:px-8 max-w-7xl mx-auto flex flex-col gap-10 pb-12">
-            {/* Hero / Welcome Section */}
-            <section className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-primary to-primary-container p-8 md:p-12 text-on-primary shadow-[0px_20px_40px_rgba(0,27,68,0.06)] mt-8 md:mt-10">
+            <section className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-primary to-primary-container p-6 md:p-8 text-on-primary shadow-sm mt-4 md:mt-6">
                 <div className="relative z-10 max-w-2xl">
-                    <p className="font-inter text-primary-fixed-dim text-sm font-medium tracking-wide uppercase mb-2">Student Portal</p>
-                    <h2 className="font-headline text-4xl md:text-5xl font-extrabold tracking-tight mb-4 text-surface-bright">Welcome, {firstName}</h2>
-                    <p className="font-body text-inverse-on-surface text-base md:text-lg max-w-xl opacity-90 leading-relaxed">Here is a summary of your campus activities and upcoming reservations for today.</p>
+                    <p className="font-inter text-primary-fixed-dim text-xs font-medium tracking-wide uppercase mb-1">Student Portal</p>
+                    <h2 className="font-headline text-2xl md:text-3xl font-extrabold tracking-tight mb-2 text-surface-bright">Welcome, {firstName}</h2>
+                    <p className="font-body text-inverse-on-surface text-sm md:text-base max-w-xl opacity-90 leading-relaxed">Here is a summary of your campus activities and upcoming reservations for today.</p>
                 </div>
-                {/* Abstract decorative element */}
-                <div className="absolute right-0 bottom-0 w-64 h-64 bg-secondary-fixed opacity-10 rounded-tl-full blur-3xl pointer-events-none"></div>
-                <div className="absolute right-32 top-0 w-48 h-48 bg-primary-fixed opacity-10 rounded-b-full blur-2xl pointer-events-none"></div>
+                <div className="absolute right-0 bottom-0 w-48 h-48 bg-secondary-fixed opacity-10 rounded-tl-full blur-3xl pointer-events-none"></div>
+                <div className="absolute right-32 top-0 w-32 h-32 bg-primary-fixed opacity-10 rounded-b-full blur-2xl pointer-events-none"></div>
             </section>
 
-            {/* Grid Layout */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* Left Column (Stats & Quick Actions) */}
                 <div className="lg:col-span-2 flex flex-col gap-8">
-                    {/* Booking Summary (Bento Style) */}
                     <section>
-                        <h3 className="font-headline text-xl font-bold text-primary mb-6">Upcoming Bookings</h3>
+                        <h3 className="font-headline text-xl font-bold text-primary mb-6">Booking Analytics</h3>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            {/* Approved Card */}
-                            <div className="bg-surface-container-lowest rounded-xl p-6 flex items-start justify-between shadow-sm group transition-all hover:shadow-md border border-outline-variant/20">
-                                <div>
-                                    <div className="flex items-center gap-2 mb-4">
-                                        <div className="w-8 h-8 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center">
-                                            <span className="material-symbols-outlined text-[18px]">check_circle</span>
-                                        </div>
-                                        <span className="font-label text-sm font-medium text-on-surface-variant">Approved</span>
+                            <div className="bg-surface-container-lowest rounded-xl p-6 flex flex-col justify-between shadow-sm border border-outline-variant/20 hover:shadow-md transition-shadow">
+                                <div className="flex items-center justify-between mb-4">
+                                    <span className="font-label text-sm font-medium text-on-surface-variant">Total Bookings</span>
+                                    <div className="w-8 h-8 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center">
+                                        <span className="material-symbols-outlined text-[18px]">bar_chart</span>
                                     </div>
-                                    <div className="font-headline text-4xl font-extrabold text-primary mb-1">{stats.approved}</div>
-                                    <p className="font-body text-sm text-on-surface-variant">Reservations confirmed</p>
                                 </div>
-                                <span className="material-symbols-outlined text-outline-variant group-hover:text-primary transition-colors">arrow_forward</span>
+                                <div className="font-headline text-4xl font-extrabold text-primary">{metrics.total}</div>
+                                <p className="font-body text-xs text-on-surface-variant mt-2">Overall reservations</p>
                             </div>
 
-                            {/* Pending Card */}
-                            <div className="bg-surface-container-lowest rounded-xl p-6 flex items-start justify-between shadow-sm group transition-all hover:shadow-md border border-outline-variant/20">
-                                <div>
-                                    <div className="flex items-center gap-2 mb-4">
-                                        <div className="w-8 h-8 rounded-full bg-tertiary-fixed-dim/20 text-on-tertiary-fixed flex items-center justify-center">
-                                            <span className="material-symbols-outlined text-[18px]">schedule</span>
-                                        </div>
-                                        <span className="font-label text-sm font-medium text-on-surface-variant">Pending</span>
+                            <div className="bg-surface-container-lowest rounded-xl p-6 flex flex-col justify-between shadow-sm border border-outline-variant/20 hover:shadow-md transition-shadow">
+                                <div className="flex items-center justify-between mb-4">
+                                    <span className="font-label text-sm font-medium text-on-surface-variant">Pending Requests</span>
+                                    <div className="w-8 h-8 rounded-full bg-tertiary-fixed-dim/20 text-on-tertiary-fixed flex items-center justify-center">
+                                        <span className="material-symbols-outlined text-[18px]">schedule</span>
                                     </div>
-                                    <div className="font-headline text-4xl font-extrabold text-primary mb-1">{stats.pending}</div>
-                                    <p className="font-body text-sm text-on-surface-variant">Awaiting approval</p>
                                 </div>
-                                <span className="material-symbols-outlined text-outline-variant group-hover:text-primary transition-colors">arrow_forward</span>
+                                <div className="font-headline text-4xl font-extrabold text-primary">{metrics.pending}</div>
+                                <p className="font-body text-xs text-on-surface-variant mt-2">Awaiting approval</p>
+                            </div>
+
+                            <div className="bg-surface-container-lowest rounded-xl p-6 flex flex-col justify-between shadow-sm border border-outline-variant/20 hover:shadow-md transition-shadow">
+                                <div className="flex items-center justify-between mb-4">
+                                    <span className="font-label text-sm font-medium text-on-surface-variant">Top Resource</span>
+                                    <div className="w-8 h-8 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center">
+                                        <span className="material-symbols-outlined text-[18px]">star</span>
+                                    </div>
+                                </div>
+                                <div className="font-headline text-2xl font-bold text-primary truncate" title={metrics.topResource}>{metrics.topResource}</div>
+                                <p className="font-body text-xs text-on-surface-variant mt-2">Most frequently booked</p>
+                            </div>
+
+                            <div className="bg-surface-container-lowest rounded-xl p-6 flex flex-col justify-between shadow-sm border border-outline-variant/20 hover:shadow-md transition-shadow">
+                                <div className="flex items-center justify-between mb-4">
+                                    <span className="font-label text-sm font-medium text-on-surface-variant">Peak Time</span>
+                                    <div className="w-8 h-8 rounded-full bg-error-container text-on-error-container flex items-center justify-center">
+                                        <span className="material-symbols-outlined text-[18px]">trending_up</span>
+                                    </div>
+                                </div>
+                                <div className="font-headline text-2xl font-bold text-primary">{metrics.peakTime}</div>
+                                <p className="font-body text-xs text-on-surface-variant mt-2">Approval Rate: {metrics.approvalRate}%</p>
                             </div>
                         </div>
                     </section>
 
-                    {/* Quick Access Cards */}
                     <section>
                         <h3 className="font-headline text-xl font-bold text-primary mb-6">Quick Actions</h3>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -108,16 +167,40 @@ export default function Dashboard() {
                             </Link>
                         </div>
                     </section>
+
+                    <section>
+                        <h3 className="font-headline text-xl font-bold text-primary mb-6">Bookings Over Time</h3>
+                        <div className="bg-surface-container-lowest rounded-xl p-6 shadow-sm border border-outline-variant/20">
+                            <div className="flex items-end h-40 gap-2 w-full mt-4">
+                                {Array.from({ length: 24 }).map((_, hour) => {
+                                    const count = bookings.filter((booking) => booking.startTime && booking.startTime.startsWith(hour.toString().padStart(2, '0'))).length;
+                                    const heightPercentage = (count / maxHourlyBookings) * 100;
+
+                                    return (
+                                        <div key={hour} className="flex-1 flex flex-col items-center gap-2 group relative">
+                                            <div className="w-full bg-primary/20 rounded-t-sm" style={{ height: `${heightPercentage}%`, minHeight: count > 0 ? '4px' : '0' }}></div>
+                                            <span className="text-[10px] text-on-surface-variant">{hour}h</span>
+
+                                            {count > 0 && (
+                                                <div className="absolute -top-8 bg-surface-container text-on-surface text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10">
+                                                    {count} bookings
+                                                </div>
+                                            )}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    </section>
                 </div>
 
-                {/* Right Column (Recent Activity) */}
                 <div className="lg:col-span-1">
                     <section className="bg-surface-container-low rounded-xl p-6 h-full border border-outline-variant/10">
                         <div className="flex items-center justify-between mb-6">
                             <h3 className="font-headline text-xl font-bold text-primary">Recent Activity</h3>
                             <Link to="/notifications" className="text-sm font-label text-primary font-medium hover:underline">View All</Link>
                         </div>
-                        
+
                         <div className="flex flex-col gap-6">
                             {recentNotifications.length === 0 ? (
                                 <p className="font-body text-sm text-on-surface-variant">No activity yet.</p>
