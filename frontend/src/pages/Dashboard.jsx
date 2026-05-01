@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import { getAllBookings } from '../services/api';
-import { getUser } from '../utils/auth';
+import { getAllBookings, getNotifications, getUserBookings } from '../services/api';
+import { getUser, getUserId } from '../utils/auth';
 
 export default function Dashboard() {
     const [bookings, setBookings] = useState([]);
@@ -12,75 +12,89 @@ export default function Dashboard() {
         peakTime: 'N/A',
         approvalRate: 0
     });
-    
+    const [recentNotifications, setRecentNotifications] = useState([]);
     const user = getUser();
-    const firstName = user?.name ? user.name.split(' ')[0] : 'Admin';
+    const userId = getUserId() || user?.id || 1;
+    const firstName = user?.name ? user.name.split(' ')[0] : 'User';
 
     useEffect(() => {
-        const fetchAndCalculateMetrics = async () => {
+        const calculateMetrics = (items) => {
+            const total = items.length;
+            const pending = items.filter((booking) => booking.status === 'PENDING').length;
+            const approved = items.filter((booking) => booking.status === 'APPROVED').length;
+            const approvalRate = total > 0 ? ((approved / total) * 100).toFixed(1) : 0;
+
+            const resourceCounts = {};
+            items.forEach((booking) => {
+                const resourceName = booking.resource?.name || `Resource #${booking.resourceId}`;
+                resourceCounts[resourceName] = (resourceCounts[resourceName] || 0) + 1;
+            });
+            const topResource = Object.keys(resourceCounts).length > 0
+                ? Object.keys(resourceCounts).reduce((a, b) => resourceCounts[a] > resourceCounts[b] ? a : b)
+                : 'N/A';
+
+            const hourCounts = {};
+            items.forEach((booking) => {
+                if (booking.startTime) {
+                    const hour = booking.startTime.split(':')[0];
+                    hourCounts[hour] = (hourCounts[hour] || 0) + 1;
+                }
+            });
+            const peakHour = Object.keys(hourCounts).length > 0
+                ? Object.keys(hourCounts).reduce((a, b) => hourCounts[a] > hourCounts[b] ? a : b)
+                : null;
+
+            setMetrics({
+                total,
+                pending,
+                topResource,
+                peakTime: peakHour ? `${peakHour}:00` : 'N/A',
+                approvalRate
+            });
+        };
+
+        const fetchDashboardData = async () => {
             try {
-                const allBookings = await getAllBookings();
-                setBookings(allBookings);
-
-                const total = allBookings.length;
-                if (total === 0) return;
-
-                const pending = allBookings.filter(b => b.status === "PENDING").length;
-                const approved = allBookings.filter(b => b.status === "APPROVED").length;
-                const approvalRate = ((approved / total) * 100).toFixed(1);
-
-                // Calculate Top Resource
-                const resourceCounts = {};
-                allBookings.forEach(b => {
-                    const rName = b.resource?.name || `Resource #${b.resourceId}`;
-                    resourceCounts[rName] = (resourceCounts[rName] || 0) + 1;
-                });
-                const topResource = Object.keys(resourceCounts).reduce((a, b) => resourceCounts[a] > resourceCounts[b] ? a : b, 'N/A');
-
-                // Calculate Peak Time
-                const hourCounts = {};
-                allBookings.forEach(b => {
-                    if (b.startTime) {
-                        const hour = b.startTime.split(':')[0];
-                        hourCounts[hour] = (hourCounts[hour] || 0) + 1;
-                    }
-                });
-                const peakHour = Object.keys(hourCounts).length > 0 
-                    ? Object.keys(hourCounts).reduce((a, b) => hourCounts[a] > hourCounts[b] ? a : b)
-                    : null;
-                const peakTime = peakHour ? `${peakHour}:00` : 'N/A';
-
-                setMetrics({ total, pending, topResource, peakTime, approvalRate });
+                const [bookingData, notificationData] = await Promise.all([
+                    getAllBookings().catch(() => getUserBookings(userId)),
+                    getNotifications(userId).catch(() => [])
+                ]);
+                const safeBookings = Array.isArray(bookingData) ? bookingData : [];
+                setBookings(safeBookings);
+                setRecentNotifications(Array.isArray(notificationData) ? notificationData.slice(0, 3) : []);
+                calculateMetrics(safeBookings);
             } catch (error) {
-                console.error("Failed to load dashboard stats", error);
+                console.error('Failed to load dashboard stats', error);
             }
         };
-        fetchAndCalculateMetrics();
-    }, []);
+
+        fetchDashboardData();
+    }, [userId]);
+
+    const maxHourlyBookings = Math.max(
+        ...Array.from({ length: 24 }).map((_, hour) =>
+            bookings.filter((booking) => booking.startTime && booking.startTime.startsWith(hour.toString().padStart(2, '0'))).length
+        ),
+        1
+    );
 
     return (
         <div className="px-4 md:px-8 max-w-7xl mx-auto flex flex-col gap-10 pb-12">
-            {/* Hero / Welcome Section */}
             <section className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-primary to-primary-container p-6 md:p-8 text-on-primary shadow-sm mt-4 md:mt-6">
                 <div className="relative z-10 max-w-2xl">
                     <p className="font-inter text-primary-fixed-dim text-xs font-medium tracking-wide uppercase mb-1">Student Portal</p>
                     <h2 className="font-headline text-2xl md:text-3xl font-extrabold tracking-tight mb-2 text-surface-bright">Welcome, {firstName}</h2>
                     <p className="font-body text-inverse-on-surface text-sm md:text-base max-w-xl opacity-90 leading-relaxed">Here is a summary of your campus activities and upcoming reservations for today.</p>
                 </div>
-                {/* Abstract decorative element */}
                 <div className="absolute right-0 bottom-0 w-48 h-48 bg-secondary-fixed opacity-10 rounded-tl-full blur-3xl pointer-events-none"></div>
                 <div className="absolute right-32 top-0 w-32 h-32 bg-primary-fixed opacity-10 rounded-b-full blur-2xl pointer-events-none"></div>
             </section>
 
-            {/* Grid Layout */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* Left Column (Stats & Quick Actions) */}
                 <div className="lg:col-span-2 flex flex-col gap-8">
-                    {/* Analytics Summary */}
                     <section>
                         <h3 className="font-headline text-xl font-bold text-primary mb-6">Booking Analytics</h3>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            {/* Total Bookings Card */}
                             <div className="bg-surface-container-lowest rounded-xl p-6 flex flex-col justify-between shadow-sm border border-outline-variant/20 hover:shadow-md transition-shadow">
                                 <div className="flex items-center justify-between mb-4">
                                     <span className="font-label text-sm font-medium text-on-surface-variant">Total Bookings</span>
@@ -92,7 +106,6 @@ export default function Dashboard() {
                                 <p className="font-body text-xs text-on-surface-variant mt-2">Overall reservations</p>
                             </div>
 
-                            {/* Pending Requests Card */}
                             <div className="bg-surface-container-lowest rounded-xl p-6 flex flex-col justify-between shadow-sm border border-outline-variant/20 hover:shadow-md transition-shadow">
                                 <div className="flex items-center justify-between mb-4">
                                     <span className="font-label text-sm font-medium text-on-surface-variant">Pending Requests</span>
@@ -104,7 +117,6 @@ export default function Dashboard() {
                                 <p className="font-body text-xs text-on-surface-variant mt-2">Awaiting approval</p>
                             </div>
 
-                            {/* Top Resource Card */}
                             <div className="bg-surface-container-lowest rounded-xl p-6 flex flex-col justify-between shadow-sm border border-outline-variant/20 hover:shadow-md transition-shadow">
                                 <div className="flex items-center justify-between mb-4">
                                     <span className="font-label text-sm font-medium text-on-surface-variant">Top Resource</span>
@@ -116,7 +128,6 @@ export default function Dashboard() {
                                 <p className="font-body text-xs text-on-surface-variant mt-2">Most frequently booked</p>
                             </div>
 
-                            {/* Peak Time Card */}
                             <div className="bg-surface-container-lowest rounded-xl p-6 flex flex-col justify-between shadow-sm border border-outline-variant/20 hover:shadow-md transition-shadow">
                                 <div className="flex items-center justify-between mb-4">
                                     <span className="font-label text-sm font-medium text-on-surface-variant">Peak Time</span>
@@ -130,7 +141,6 @@ export default function Dashboard() {
                         </div>
                     </section>
 
-                    {/* Quick Access Cards */}
                     <section>
                         <h3 className="font-headline text-xl font-bold text-primary mb-6">Quick Actions</h3>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -158,22 +168,19 @@ export default function Dashboard() {
                         </div>
                     </section>
 
-                    {/* Simple Bar Chart: Bookings per Hour */}
                     <section>
                         <h3 className="font-headline text-xl font-bold text-primary mb-6">Bookings Over Time</h3>
                         <div className="bg-surface-container-lowest rounded-xl p-6 shadow-sm border border-outline-variant/20">
                             <div className="flex items-end h-40 gap-2 w-full mt-4">
                                 {Array.from({ length: 24 }).map((_, hour) => {
-                                    const count = bookings.filter(b => b.startTime && b.startTime.startsWith(hour.toString().padStart(2, '0'))).length;
-                                    const maxCount = Math.max(...Array.from({ length: 24 }).map((_, h) => bookings.filter(b => b.startTime && b.startTime.startsWith(h.toString().padStart(2, '0'))).length)) || 1;
-                                    const heightPercentage = (count / maxCount) * 100;
-                                    
+                                    const count = bookings.filter((booking) => booking.startTime && booking.startTime.startsWith(hour.toString().padStart(2, '0'))).length;
+                                    const heightPercentage = (count / maxHourlyBookings) * 100;
+
                                     return (
                                         <div key={hour} className="flex-1 flex flex-col items-center gap-2 group relative">
                                             <div className="w-full bg-primary/20 rounded-t-sm" style={{ height: `${heightPercentage}%`, minHeight: count > 0 ? '4px' : '0' }}></div>
                                             <span className="text-[10px] text-on-surface-variant">{hour}h</span>
-                                            
-                                            {/* Tooltip */}
+
                                             {count > 0 && (
                                                 <div className="absolute -top-8 bg-surface-container text-on-surface text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10">
                                                     {count} bookings
@@ -187,28 +194,34 @@ export default function Dashboard() {
                     </section>
                 </div>
 
-                {/* Right Column (Recent Activity) */}
                 <div className="lg:col-span-1">
                     <section className="bg-surface-container-low rounded-xl p-6 h-full border border-outline-variant/10">
                         <div className="flex items-center justify-between mb-6">
                             <h3 className="font-headline text-xl font-bold text-primary">Recent Activity</h3>
-                            <button className="text-sm font-label text-primary font-medium hover:underline">View All</button>
+                            <Link to="/notifications" className="text-sm font-label text-primary font-medium hover:underline">View All</Link>
                         </div>
-                        
+
                         <div className="flex flex-col gap-6">
-                            <div className="flex gap-4 relative group cursor-pointer hover:bg-surface-container-highest/30 p-2 -mx-2 rounded-lg transition-colors">
-                                <div className="absolute left-[19px] top-10 bottom-[-24px] w-px bg-surface-container-highest group-last:hidden"></div>
-                                <div className="relative z-10 w-10 h-10 rounded-full bg-surface-container-lowest border border-outline-variant/20 flex items-center justify-center flex-shrink-0 shadow-sm">
-                                    <span className="material-symbols-outlined text-secondary text-sm">check</span>
-                                </div>
-                                <div className="pt-1">
-                                    <p className="font-body text-sm text-on-surface font-medium mb-1">Lecture Hall 1 Booking Approved</p>
-                                    <p className="font-body text-xs text-on-surface-variant mb-2">Your request was confirmed by Admin.</p>
-                                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-secondary-container/50 text-on-secondary-container text-[11px] font-semibold tracking-wide">
-                                        <span className="w-1.5 h-1.5 rounded-full bg-secondary"></span> Approved
-                                    </span>
-                                </div>
-                            </div>
+                            {recentNotifications.length === 0 ? (
+                                <p className="font-body text-sm text-on-surface-variant">No activity yet.</p>
+                            ) : recentNotifications.map((notification) => (
+                                <Link key={notification.id} to="/notifications" className="flex gap-4 relative group hover:bg-surface-container-highest/30 p-2 -mx-2 rounded-lg transition-colors">
+                                    <div className="absolute left-[19px] top-10 bottom-[-24px] w-px bg-surface-container-highest group-last:hidden"></div>
+                                    <div className="relative z-10 w-10 h-10 rounded-full bg-surface-container-lowest border border-outline-variant/20 flex items-center justify-center flex-shrink-0 shadow-sm">
+                                        <span className="material-symbols-outlined text-secondary text-sm">
+                                            {notification.referenceType === 'TICKET' ? 'confirmation_number' : 'event_available'}
+                                        </span>
+                                    </div>
+                                    <div className="pt-1 min-w-0">
+                                        <p className="font-body text-sm text-on-surface font-medium mb-1 line-clamp-1">{notification.title}</p>
+                                        <p className="font-body text-xs text-on-surface-variant mb-2 line-clamp-2">{notification.message}</p>
+                                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-secondary-container/50 text-on-secondary-container text-[11px] font-semibold tracking-wide">
+                                            <span className={`w-1.5 h-1.5 rounded-full ${notification.read ? 'bg-outline' : 'bg-secondary'}`}></span>
+                                            {notification.read ? 'Read' : 'Unread'}
+                                        </span>
+                                    </div>
+                                </Link>
+                            ))}
                         </div>
                     </section>
                 </div>

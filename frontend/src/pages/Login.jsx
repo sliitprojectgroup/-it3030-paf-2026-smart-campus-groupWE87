@@ -1,39 +1,28 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import toast from 'react-hot-toast';
 import { setUser } from '../utils/auth';
+import { loginUser } from '../services/api';
 
 export default function Login() {
     const navigate = useNavigate();
-    const [formData, setFormData] = useState({ email: '', password: '' });
-    const [error, setError] = useState(null);
+    const [credentials, setCredentials] = useState({ email: '', password: '' });
     const [loading, setLoading] = useState(false);
 
     const handleChange = (e) => {
-        setFormData({ ...formData, [e.target.name]: e.target.value });
+        setCredentials({ ...credentials, [e.target.name]: e.target.value });
     };
 
-    const handleSubmit = async (e) => {
+    const handleLogin = async (e) => {
         e.preventDefault();
-        setError(null);
         setLoading(true);
-
         try {
-            const response = await axios.post('http://localhost:8080/api/auth/login', formData);
-            const user = response.data;
-            
-            // The instructions asked to set userId, role, and name.
-            // Using our auth.js setUser which sets the whole user object.
+            const user = await loginUser(credentials);
             setUser(user);
-            
-            // Also setting individual items just in case other parts of code expect it
-            localStorage.setItem('userId', user.id);
-            localStorage.setItem('role', user.role);
-            localStorage.setItem('name', user.name);
-            
+            toast.success(`Welcome back, ${user.name.split(' ')[0]}!`);
             navigate('/');
         } catch (err) {
-            setError("Invalid credentials");
+            toast.error(err.response?.data || 'Invalid email or password.');
         } finally {
             setLoading(false);
         }
@@ -45,46 +34,53 @@ export default function Login() {
                 <div className="w-16 h-16 bg-primary-container text-on-primary-container rounded-2xl flex items-center justify-center mx-auto mb-6">
                     <span className="material-symbols-outlined text-[32px]">login</span>
                 </div>
-                <h1 className="font-headline text-3xl font-extrabold text-primary mb-2">Welcome Back</h1>
-                <p className="font-body text-on-surface-variant mb-8 text-sm">Please log in to your account</p>
-                
-                {error && (
-                    <div className="bg-error-container text-on-error-container p-3 rounded-xl mb-6 text-sm font-medium">
-                        {error}
-                    </div>
-                )}
-                
-                <form onSubmit={handleSubmit} className="flex flex-col gap-4 text-left">
+                <h1 className="font-headline text-3xl font-extrabold text-primary mb-2">Smart Campus</h1>
+                <p className="font-body text-on-surface-variant mb-6 text-sm">Sign in to your account</p>
+
+                <form onSubmit={handleLogin} className="flex flex-col gap-4 text-left">
                     <div>
-                        <label className="block font-label text-sm font-medium text-on-surface mb-2">Email Address</label>
-                        <input 
-                            required 
-                            type="email" 
-                            name="email" 
-                            value={formData.email} 
-                            onChange={handleChange} 
-                            className="w-full bg-surface-container-highest border-none rounded-xl py-3 px-4 font-body text-on-surface focus:ring-2 focus:ring-primary focus:bg-surface-container-lowest transition-all" 
-                            placeholder="name@sliit.lk" 
-                        />
+                        <label className="font-label text-sm font-semibold text-on-surface-variant mb-1.5 block">Email Address</label>
+                        <div className="relative">
+                            <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px]">mail</span>
+                            <input 
+                                type="email"
+                                name="email"
+                                placeholder="name@sliit.lk"
+                                value={credentials.email}
+                                onChange={handleChange}
+                                required
+                                className="w-full pl-11 pr-4 py-3.5 rounded-xl border border-outline-variant/50 bg-surface focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all font-body text-[15px]" 
+                            />
+                        </div>
                     </div>
-                    <div className="mb-2">
-                        <label className="block font-label text-sm font-medium text-on-surface mb-2">Password</label>
-                        <input 
-                            required 
-                            type="password" 
-                            name="password" 
-                            value={formData.password} 
-                            onChange={handleChange} 
-                            className="w-full bg-surface-container-highest border-none rounded-xl py-3 px-4 font-body text-on-surface focus:ring-2 focus:ring-primary focus:bg-surface-container-lowest transition-all" 
-                            placeholder="••••••" 
-                        />
+                    
+                    <div>
+                        <label className="font-label text-sm font-semibold text-on-surface-variant mb-1.5 block">Password</label>
+                        <div className="relative">
+                            <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px]">lock</span>
+                            <input 
+                                type="password" 
+                                name="password"
+                                placeholder="••••••••"
+                                value={credentials.password}
+                                onChange={handleChange}
+                                required
+                                className="w-full pl-11 pr-4 py-3.5 rounded-xl border border-outline-variant/50 bg-surface focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all font-body text-[15px]" 
+                            />
+                        </div>
                     </div>
-                    <button 
-                        type="submit" 
+
+                    <button
+                        type="submit"
                         disabled={loading}
-                        className="w-full py-4 px-6 rounded-xl bg-primary text-on-primary hover:bg-primary/90 transition-colors font-body font-semibold text-[15px] flex items-center justify-center gap-2 shadow-sm disabled:opacity-70 mt-2"
+                        className="w-full mt-2 py-4 px-6 rounded-xl bg-primary text-on-primary hover:bg-primary/90 disabled:opacity-70 transition-colors font-body font-semibold text-[15px] flex items-center justify-center gap-2 shadow-sm"
                     >
-                        {loading ? 'Logging in...' : 'Log In'}
+                        {loading ? (
+                            <span className="material-symbols-outlined animate-spin text-[18px]">progress_activity</span>
+                        ) : (
+                            <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
+                        )}
+                        Sign In
                     </button>
                 </form>
             </div>

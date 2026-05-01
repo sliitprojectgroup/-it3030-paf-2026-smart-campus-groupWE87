@@ -7,12 +7,14 @@ import com.sliit.paf.model.Resource;
 import com.sliit.paf.repository.BookingRepository;
 import com.sliit.paf.repository.ResourceRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class BookingService {
 
     private final BookingRepository bookingRepository;
@@ -37,11 +39,16 @@ public class BookingService {
         }
 
         booking.setStatus("PENDING");
-        System.out.println("Saving booking for user: " + booking.getUserId());
-        // ensure checkedIn is non-null for DB (column is NOT NULL)
-        booking.setCheckedIn(false);
-        System.out.println("checkedIn before save: " + booking.getCheckedIn());
-        return bookingRepository.save(booking);
+        if (booking.getCheckedIn() == null) {
+            booking.setCheckedIn(false);
+        }
+        Booking saved = bookingRepository.save(booking);
+
+        sendBookingNotification(() -> notificationService.notifyBookingCreated(
+                saved.getUserId(), saved.getId(), resource.getName()));
+        sendBookingNotification(() -> notificationService.notifyAdminsBookingCreated(
+                saved.getUserId(), saved.getId(), resource.getName()));
+        return saved;
     }
 
     public List<Booking> getAllBookings() {
@@ -65,7 +72,8 @@ public class BookingService {
         booking.setStatus("APPROVED");
         Booking saved = bookingRepository.save(booking);
 
-        notificationService.sendNotification("Your booking (ID: " + id + ") has been APPROVED.");
+        sendBookingNotification(() -> notificationService.notifyBookingApproved(
+                booking.getUserId(), id, getResourceNameForNotification(booking)));
         return saved;
     }
 
@@ -75,14 +83,33 @@ public class BookingService {
         booking.setAdminReason(reason);
         Booking saved = bookingRepository.save(booking);
 
-        notificationService.sendNotification("Your booking (ID: " + id + ") has been REJECTED. Reason: " + reason);
+        sendBookingNotification(() -> notificationService.notifyBookingRejected(
+                booking.getUserId(), id, getResourceNameForNotification(booking), reason));
         return saved;
     }
 
     public Booking cancelBooking(Long id) {
         Booking booking = getBookingByIdOrThrow(id);
         booking.setStatus("CANCELLED");
-        return bookingRepository.save(booking);
+        Booking saved = bookingRepository.save(booking);
+
+        sendBookingNotification(() -> notificationService.notifyBookingCancelled(
+                booking.getUserId(), id, getResourceNameForNotification(booking)));
+        return saved;
+    }
+
+    private String getResourceNameForNotification(Booking booking) {
+        return resourceRepository.findById(booking.getResourceId())
+                .map(Resource::getName)
+                .orElse("Resource #" + booking.getResourceId());
+    }
+
+    private void sendBookingNotification(Runnable notificationAction) {
+        try {
+            notificationAction.run();
+        } catch (RuntimeException ex) {
+            log.warn("Booking status updated, but notification could not be created: {}", ex.getMessage());
+        }
     }
 
     private Booking getBookingByIdOrThrow(Long id) {

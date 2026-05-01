@@ -62,7 +62,7 @@ export default function AdminOps() {
             setBookings(bookings.map(b => (b.id === id ? { ...b, status: 'APPROVED' } : b)));
             toast.success("Booking approved successfully");
         } catch (err) {
-            toast.error("Failed to approve booking");
+            toast.error(err.response?.data?.message || "Failed to approve booking");
         }
     };
 
@@ -83,7 +83,7 @@ export default function AdminOps() {
             setShowRejectModal(false);
             toast.success("Booking rejected");
         } catch (err) {
-            toast.error("Failed to reject booking");
+            toast.error(err.response?.data?.message || "Failed to reject booking");
         }
     };
 
