@@ -45,6 +45,36 @@ export const getBookingStats = () => api.get('/bookings/stats');
 // Tickets
 export const createTicket = (data) => api.post('/tickets', data);
 export const getTickets = () => api.get('/tickets');
+export const getTicketById = (id) => api.get(`/tickets/${id}`);
+export const getTicketsByUser = (userId) => api.get(`/tickets/user/${userId}`);
+export const getTicketsByStatus = (status) => api.get(`/tickets/status/${status}`);
+export const getTicketsByPriority = (priority) => api.get(`/tickets/priority/${priority}`);
+export const getTicketsByResource = (resourceId) => api.get(`/tickets/resource/${resourceId}`);
+export const getTicketsAssignedTo = (staffId) => api.get(`/tickets/assigned/${staffId}`);
+export const updateTicket = (id, data) => api.put(`/tickets/${id}`, data);
+export const updateTicketStatus = (id, status) => api.put(`/tickets/${id}/status/${status}`);
+export const assignTicket = (id, staffId) => api.put(`/tickets/${id}/assign/${staffId}`);
+export const rejectTicket = (id, reason) => api.put(`/tickets/${id}/reject`, null, { params: { reason } });
+export const deleteTicket = (id) => api.delete(`/tickets/${id}`);
+export const uploadTicketAttachment = (ticketId, file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return api.post(`/tickets/${ticketId}/attachments`, formData, {
+        headers: {
+            'Content-Type': 'multipart/form-data'
+        }
+    });
+};
+export const getTicketAttachments = (ticketId) => api.get(`/tickets/${ticketId}/attachments`);
+export const getAttachment = (attachmentId) => api.get(`/tickets/attachment/${attachmentId}`);
+export const deleteAttachment = (attachmentId) => api.delete(`/tickets/attachment/${attachmentId}`);
+
+// Ticket Comments
+export const addComment = (ticketId, data) => api.post(`/tickets/${ticketId}/comments`, data);
+export const getTicketComments = (ticketId) => api.get(`/tickets/${ticketId}/comments`);
+export const getComment = (commentId) => api.get(`/tickets/comment/${commentId}`);
+export const updateComment = (commentId, data) => api.put(`/tickets/comment/${commentId}`, data);
+export const deleteComment = (commentId, userId) => api.delete(`/tickets/comment/${commentId}`, { params: { userId } });
 
 // Notifications
 export const getNotifications = (userId) => api.get('/notifications', { params: { userId } });
