@@ -6,6 +6,7 @@ import com.sliit.paf.repository.NotificationRepository;
 import com.sliit.paf.repository.UserRepository;
 import com.sliit.paf.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -57,6 +58,7 @@ public class NotificationService {
 
     // ─── Booking notifications ────────────────────────────────────────────────
 
+    @Async
     public void notifyBookingCreated(Long userId, Long bookingId, String resourceName) {
         createNotification(userId,
                 "Booking Request Submitted",
@@ -64,6 +66,7 @@ public class NotificationService {
                 "BOOKING_CREATED", bookingId, "BOOKING");
     }
 
+    @Async
     public void notifyAdminsBookingCreated(Long requesterId, Long bookingId, String resourceName) {
         String requesterName = userRepository.findById(requesterId)
                 .map(User::getName)
@@ -77,6 +80,7 @@ public class NotificationService {
                         "BOOKING_PENDING_APPROVAL", bookingId, "BOOKING"));
     }
 
+    @Async
     public void notifyBookingApproved(Long userId, Long bookingId, String resourceName) {
         createNotification(userId,
                 "Booking Approved",
@@ -84,6 +88,7 @@ public class NotificationService {
                 "BOOKING_APPROVED", bookingId, "BOOKING");
     }
 
+    @Async
     public void notifyBookingRejected(Long userId, Long bookingId, String resourceName, String reason) {
         createNotification(userId,
                 "Booking Rejected",
@@ -91,6 +96,7 @@ public class NotificationService {
                 "BOOKING_REJECTED", bookingId, "BOOKING");
     }
 
+    @Async
     public void notifyBookingCancelled(Long userId, Long bookingId, String resourceName) {
         createNotification(userId,
                 "Booking Cancelled",
