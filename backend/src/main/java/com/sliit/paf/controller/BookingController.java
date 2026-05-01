@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/bookings")
@@ -43,6 +44,11 @@ public class BookingController {
         return ResponseEntity.ok(bookingService.getPendingBookings());
     }
 
+    @GetMapping("/stats")
+    public ResponseEntity<Map<String, Object>> getBookingStats() {
+        return ResponseEntity.ok(bookingService.getBookingStats());
+    }
+
     @PutMapping("/{id}/approve")
     public ResponseEntity<Booking> approveBooking(@PathVariable Long id) {
         return ResponseEntity.ok(bookingService.approveBooking(id));
@@ -56,5 +62,23 @@ public class BookingController {
     @PutMapping("/{id}/cancel")
     public ResponseEntity<Booking> cancelBooking(@PathVariable Long id) {
         return ResponseEntity.ok(bookingService.cancelBooking(id));
+    }
+
+    @GetMapping("/verify/{qrCode}")
+    public ResponseEntity<?> verifyBooking(@PathVariable String qrCode) {
+        Booking booking = bookingService.verifyBooking(qrCode);
+        if (Boolean.TRUE.equals(booking.getCheckedIn()) && booking.getCheckedInTime() != null) {
+            boolean justCheckedIn = booking.getCheckedInTime().isAfter(java.time.LocalDateTime.now().minusSeconds(5));
+            if (justCheckedIn) {
+                return ResponseEntity.ok(booking);
+            }
+            return ResponseEntity.ok(java.util.Map.of(
+                    "message", "Already checked in",
+                    "checkedInTime", booking.getCheckedInTime().toString(),
+                    "bookingId", booking.getId(),
+                    "status", booking.getStatus()
+            ));
+        }
+        return ResponseEntity.ok(booking);
     }
 }

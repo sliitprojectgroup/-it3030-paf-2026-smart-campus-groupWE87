@@ -9,6 +9,7 @@ import org.springframework.stereotype.Repository;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface BookingRepository extends JpaRepository<Booking, Long> {
@@ -23,4 +24,6 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
                            @Param("date") LocalDate date, 
                            @Param("startTime") LocalTime startTime, 
                            @Param("endTime") LocalTime endTime);
+
+    Optional<Booking> findByQrCode(String qrCode);
 }

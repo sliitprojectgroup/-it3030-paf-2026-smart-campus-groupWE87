@@ -15,6 +15,7 @@ import Login from './pages/Login';
 import PendingBookings from './pages/PendingBookings';
 import Notifications from './pages/Notifications';
 import NotificationSettings from './pages/NotificationSettings';
+import VerifyBooking from './pages/VerifyBooking';
 
 const ProtectedRoute = ({ children, adminOnly = false }) => {
     let role = getRole();
@@ -36,6 +37,7 @@ function App() {
             <Toaster position="top-right" />
             <Routes>
                 <Route path="/login" element={<Login />} />
+                <Route path="/verify/:qrCode" element={<VerifyBooking />} />
                 <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
                     <Route index element={<Dashboard />} />
                     <Route path="resources" element={<Resources />} />

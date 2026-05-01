@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 
 import jakarta.validation.constraints.Min;
@@ -55,6 +56,11 @@ public class Booking {
     private String status; // PENDING, APPROVED, REJECTED, CANCELLED
 
     private String adminReason;
+
+    @Column(unique = true)
+    private String qrCode;
+
+    private LocalDateTime checkedInTime;
 
     @Column(nullable = false)
     private Boolean checkedIn = false;
