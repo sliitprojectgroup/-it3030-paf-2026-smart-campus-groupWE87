@@ -132,7 +132,7 @@ public class SeedController {
 
             Booking booking = new Booking(
                     null, 1L, randomResource.getId(), date, startTime, endTime, purpose, attendees, status, adminReason,
-                    false, java.time.LocalDateTime.now().minusDays(random.nextInt(5)));
+                    null, null, false, java.time.LocalDateTime.now().minusDays(random.nextInt(5)));
 
             bookings.add(booking);
         }
