@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import { getAllBookings, getNotifications, getUserBookings } from '../services/api';
+import { getAllBookings, getNotifications, getUserBookings, getBookingStats } from '../services/api';
 import { getUser, getUserId } from '../utils/auth';
 
 export default function Dashboard() {
@@ -11,6 +11,13 @@ export default function Dashboard() {
         topResource: 'N/A',
         peakTime: 'N/A',
         approvalRate: 0
+    });
+    const [stats, setStats] = useState({
+        totalBookings: 0,
+        approvedBookings: 0,
+        checkedInCount: 0,
+        noShowCount: 0,
+        usageRate: 0
     });
     const [recentNotifications, setRecentNotifications] = useState([]);
     const user = getUser();
@@ -55,14 +62,16 @@ export default function Dashboard() {
 
         const fetchDashboardData = async () => {
             try {
-                const [bookingData, notificationData] = await Promise.all([
+                const [bookingData, notificationData, statsData] = await Promise.all([
                     getAllBookings().catch(() => getUserBookings(userId)),
-                    getNotifications(userId).catch(() => [])
+                    getNotifications(userId).catch(() => []),
+                    getBookingStats().catch(() => null)
                 ]);
                 const safeBookings = Array.isArray(bookingData) ? bookingData : [];
                 setBookings(safeBookings);
                 setRecentNotifications(Array.isArray(notificationData) ? notificationData.slice(0, 3) : []);
                 calculateMetrics(safeBookings);
+                if (statsData) setStats(statsData);
             } catch (error) {
                 console.error('Failed to load dashboard stats', error);
             }
@@ -94,7 +103,7 @@ export default function Dashboard() {
                 <div className="lg:col-span-2 flex flex-col gap-8">
                     <section>
                         <h3 className="font-headline text-xl font-bold text-primary mb-6">Booking Analytics</h3>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                             <div className="bg-surface-container-lowest rounded-xl p-6 flex flex-col justify-between shadow-sm border border-outline-variant/20 hover:shadow-md transition-shadow">
                                 <div className="flex items-center justify-between mb-4">
                                     <span className="font-label text-sm font-medium text-on-surface-variant">Total Bookings</span>
@@ -137,6 +146,67 @@ export default function Dashboard() {
                                 </div>
                                 <div className="font-headline text-2xl font-bold text-primary">{metrics.peakTime}</div>
                                 <p className="font-body text-xs text-on-surface-variant mt-2">Approval Rate: {metrics.approvalRate}%</p>
+                            </div>
+
+                            <div className="bg-surface-container-lowest rounded-xl p-6 flex flex-col justify-between shadow-sm border border-green-200 hover:shadow-md transition-shadow">
+                                <div className="flex items-center justify-between mb-4">
+                                    <span className="font-label text-sm font-medium text-on-surface-variant">Checked-In Users</span>
+                                    <div className="w-8 h-8 rounded-full bg-green-100 text-green-700 flex items-center justify-center">
+                                        <span className="material-symbols-outlined text-[18px]">check_circle</span>
+                                    </div>
+                                </div>
+                                <div className="font-headline text-4xl font-extrabold text-green-600">{stats.checkedInCount}</div>
+                                <p className="font-body text-xs text-on-surface-variant mt-2">Successfully checked in</p>
+                            </div>
+
+                            <div className="bg-surface-container-lowest rounded-xl p-6 flex flex-col justify-between shadow-sm border border-red-200 hover:shadow-md transition-shadow">
+                                <div className="flex items-center justify-between mb-4">
+                                    <span className="font-label text-sm font-medium text-on-surface-variant">No-Shows</span>
+                                    <div className="w-8 h-8 rounded-full bg-red-100 text-red-600 flex items-center justify-center">
+                                        <span className="material-symbols-outlined text-[18px]">person_off</span>
+                                    </div>
+                                </div>
+                                <div className="font-headline text-4xl font-extrabold text-red-500">{stats.noShowCount}</div>
+                                <p className="font-body text-xs text-on-surface-variant mt-2">Approved but not checked in</p>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section>
+                        <h3 className="font-headline text-xl font-bold text-primary mb-6">Check-in Insights</h3>
+                        <div className="bg-surface-container-lowest rounded-xl p-6 shadow-sm border border-outline-variant/20">
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                                <div className="flex flex-col items-center gap-2 p-4 bg-green-50 rounded-xl">
+                                    <span className="material-symbols-outlined text-green-600 text-3xl">check_circle</span>
+                                    <span className="font-headline text-3xl font-extrabold text-green-700">{stats.checkedInCount}</span>
+                                    <span className="font-label text-xs font-semibold text-green-600 uppercase tracking-wide">Checked-In</span>
+                                </div>
+                                <div className="flex flex-col items-center gap-2 p-4 bg-red-50 rounded-xl">
+                                    <span className="material-symbols-outlined text-red-500 text-3xl">person_off</span>
+                                    <span className="font-headline text-3xl font-extrabold text-red-600">{stats.noShowCount}</span>
+                                    <span className="font-label text-xs font-semibold text-red-500 uppercase tracking-wide">No-Shows</span>
+                                </div>
+                                <div className="flex flex-col items-center gap-2 p-4 bg-blue-50 rounded-xl">
+                                    <span className="material-symbols-outlined text-blue-500 text-3xl">speed</span>
+                                    <span className="font-headline text-3xl font-extrabold text-blue-600">{stats.usageRate}%</span>
+                                    <span className="font-label text-xs font-semibold text-blue-500 uppercase tracking-wide">Usage Rate</span>
+                                </div>
+                            </div>
+                            <div className="mt-6">
+                                <div className="flex items-center justify-between mb-2">
+                                    <span className="font-body text-xs text-on-surface-variant">Check-in Utilization</span>
+                                    <span className="font-label text-xs font-semibold text-primary">{stats.usageRate}%</span>
+                                </div>
+                                <div className="w-full bg-surface-container-highest rounded-full h-3 overflow-hidden">
+                                    <div
+                                        className="bg-gradient-to-r from-blue-500 to-green-500 h-3 rounded-full transition-all duration-500"
+                                        style={{ width: `${Math.min(stats.usageRate, 100)}%` }}
+                                    ></div>
+                                </div>
+                                <div className="flex justify-between mt-1">
+                                    <span className="font-body text-[10px] text-on-surface-variant">0%</span>
+                                    <span className="font-body text-[10px] text-on-surface-variant">100%</span>
+                                </div>
                             </div>
                         </div>
                     </section>

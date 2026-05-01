@@ -1,7 +1,9 @@
 import axios from 'axios';
 
+const API_HOST = window.location.hostname === 'localhost' ? 'localhost' : window.location.hostname;
+
 const api = axios.create({
-    baseURL: 'http://localhost:8085/api',
+    baseURL: `http://${API_HOST}:8085/api`,
     headers: {
         'Content-Type': 'application/json',
     },
@@ -35,6 +37,10 @@ export const getBookingsByDateAndResource = (resourceId, date) => api.get(`/book
 export const approveBooking = (id) => api.put(`/bookings/${id}/approve`);
 export const rejectBooking = (id, reason) => api.put(`/bookings/${id}/reject`, null, { params: { reason } });
 export const cancelBooking = (id) => api.put(`/bookings/${id}/cancel`);
+
+export const verifyBooking = (qrCode) => api.get(`/bookings/verify/${qrCode}`);
+
+export const getBookingStats = () => api.get('/bookings/stats');
 
 // Tickets
 export const createTicket = (data) => api.post('/tickets', data);
