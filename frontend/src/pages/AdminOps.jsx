@@ -205,6 +205,9 @@ export default function AdminOps() {
                                                     <span className="inline-flex items-center gap-1 text-xs font-medium text-on-surface-variant">
                                                         <span className="material-symbols-outlined text-[14px]">schedule</span> Requested At → {booking.createdAt ? new Date(booking.createdAt).toISOString().substring(0, 16).replace('T', ' ') : 'N/A'}
                                                     </span>
+                                                    <span className="inline-flex items-center gap-1 text-xs font-medium text-on-surface-variant">
+                                                        <span className="material-symbols-outlined text-[14px]">qr_code_scanner</span> Check-In → {booking.checkedIn ? 'Checked-In' : booking.status === 'APPROVED' ? 'Not Checked-In' : '-'}
+                                                    </span>
                                                 </div>
                                             </div>
                                         </div>

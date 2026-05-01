@@ -10,7 +10,11 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -70,6 +74,7 @@ public class BookingService {
     public Booking approveBooking(Long id) {
         Booking booking = getBookingByIdOrThrow(id);
         booking.setStatus("APPROVED");
+        booking.setQrCode(UUID.randomUUID().toString());
         Booking saved = bookingRepository.save(booking);
 
         sendBookingNotification(() -> notificationService.notifyBookingApproved(
@@ -96,6 +101,40 @@ public class BookingService {
         sendBookingNotification(() -> notificationService.notifyBookingCancelled(
                 booking.getUserId(), id, getResourceNameForNotification(booking)));
         return saved;
+    }
+
+    public Map<String, Object> getBookingStats() {
+        List<Booking> all = bookingRepository.findAll();
+        long totalBookings = all.size();
+        long approvedBookings = all.stream().filter(b -> "APPROVED".equals(b.getStatus())).count();
+        long checkedInCount = all.stream().filter(b -> Boolean.TRUE.equals(b.getCheckedIn())).count();
+        long noShowCount = approvedBookings - checkedInCount;
+        double usageRate = approvedBookings > 0 ? (checkedInCount * 100.0 / approvedBookings) : 0;
+
+        Map<String, Object> stats = new HashMap<>();
+        stats.put("totalBookings", totalBookings);
+        stats.put("approvedBookings", approvedBookings);
+        stats.put("checkedInCount", checkedInCount);
+        stats.put("noShowCount", noShowCount);
+        stats.put("usageRate", Math.round(usageRate * 10.0) / 10.0);
+        return stats;
+    }
+
+    public Booking verifyBooking(String qrCode) {
+        Booking booking = bookingRepository.findByQrCode(qrCode)
+                .orElseThrow(() -> new ResourceNotFoundException("Invalid QR code"));
+
+        if (!"APPROVED".equals(booking.getStatus())) {
+            throw new ConflictException("Booking is not approved. Current status: " + booking.getStatus());
+        }
+
+        if (Boolean.TRUE.equals(booking.getCheckedIn())) {
+            return booking;
+        }
+
+        booking.setCheckedIn(true);
+        booking.setCheckedInTime(LocalDateTime.now());
+        return bookingRepository.save(booking);
     }
 
     private String getResourceNameForNotification(Booking booking) {

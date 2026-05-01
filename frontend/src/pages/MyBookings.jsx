@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { QRCodeSVG } from 'qrcode.react';
 import { getUserBookings, cancelBooking, getAllBookings, getResources, loginUser } from '../services/api';
 import toast from 'react-hot-toast';
 import { getDemoCredentialsForUser, isAdmin, getUserId, setUser } from '../utils/auth';
@@ -13,6 +14,7 @@ export default function MyBookings() {
     const [sortBy, setSortBy] = useState('booking_newest');
     const [searchQuery, setSearchQuery] = useState('');
     const [itemsPerPage, setItemsPerPage] = useState(5);
+    const [qrBooking, setQrBooking] = useState(null);
 
     const getCurrentBackendUserId = async () => {
         const credentials = getDemoCredentialsForUser();
@@ -150,6 +152,18 @@ export default function MyBookings() {
         }
     };
 
+    const formatCheckedInTime = (time) => {
+        if (!time) return '';
+        const d = new Date(time);
+        const pad = (n) => String(n).padStart(2, '0');
+        const date = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+        let h = d.getHours();
+        const m = pad(d.getMinutes());
+        const ampm = h >= 12 ? 'PM' : 'AM';
+        h = h % 12 || 12;
+        return `${date} ${pad(h)}:${m} ${ampm}`;
+    };
+
     return (
         <div className="p-6 md:p-12 max-w-6xl mx-auto mt-4 md:mt-0">
             <header className="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
@@ -207,115 +221,166 @@ export default function MyBookings() {
                 </div>
             )}
 
-            <div className="bg-surface-container-low rounded-2xl p-2">
-                {/* Table Header */}
-                <div className="hidden lg:grid grid-cols-12 gap-4 px-6 py-4 font-body text-xs font-semibold text-on-surface-variant tracking-wider uppercase mb-2">
-                    <div className="col-span-2">Date & Time</div>
-                    <div className="col-span-3">Resource ID</div>
-                    <div className="col-span-3">Purpose</div>
-                    <div className="col-span-2">Status</div>
-                    <div className="col-span-2 text-right">Actions</div>
-                </div>
-
+            <div className="flex flex-col gap-4">
                 {loading ? (
                     <div className="flex justify-center p-8">
                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
                     </div>
                 ) : (
-                    <div className="flex flex-col gap-3">
-                        {paginatedBookings.length === 0 ? (
-                            <div className="p-8 text-center text-on-surface-variant font-body text-sm">No bookings found for the selected criteria.</div>
-                        ) : (
-                            paginatedBookings.map((booking) => (
-                                <div key={booking.id || booking.bookingId} className={`bg-surface rounded-xl p-5 hover:bg-surface-container-highest transition-colors grid grid-cols-1 lg:grid-cols-12 gap-4 items-center group relative overflow-hidden ${booking.status === 'REJECTED' || booking.status === 'CANCELLED' ? 'opacity-75' : ''}`}>
-                                    <div className="col-span-2 flex flex-col gap-1">
-                                        <div className={`flex flex-col ${booking.status === 'CANCELLED' || booking.status === 'REJECTED' ? 'line-through text-on-surface-variant/60' : 'text-on-surface'}`}>
-                                            <span className="font-label text-[10px] uppercase text-on-surface-variant">Booking Time</span>
-                                            <span className="font-headline font-bold text-sm">{booking.date} {booking.startTime ? booking.startTime.substring(0, 5) : ''}</span>
-                                        </div>
-                                        <div className="flex flex-col mt-1">
-                                            <span className="font-label text-[10px] uppercase text-on-surface-variant">Requested At</span>
-                                            <span className="font-body text-xs text-on-surface-variant">{booking.createdAt ? new Date(booking.createdAt).toISOString().substring(0, 16).replace('T', ' ') : 'N/A'}</span>
+                    paginatedBookings.length === 0 ? (
+                        <div className="bg-surface-container-low rounded-2xl p-8 text-center text-on-surface-variant font-body text-sm">No bookings found for the selected criteria.</div>
+                    ) : (
+                        paginatedBookings.map((booking) => (
+                            <div key={booking.id || booking.bookingId} className={`bg-surface-container-low rounded-2xl p-4 hover:bg-surface-container-highest transition-colors flex flex-col md:flex-row md:items-center gap-4 group border border-outline-variant/10 shadow-sm ${booking.status === 'REJECTED' || booking.status === 'CANCELLED' ? 'opacity-60' : ''}`}>
+                                <div className="flex items-start gap-3 flex-1 min-w-0">
+                                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${booking.status === 'CANCELLED' || booking.status === 'REJECTED' ? 'bg-surface-container text-on-surface-variant/60' : 'bg-primary/10 text-primary'}`}>
+                                        <span className="material-symbols-outlined text-[20px]">event_seat</span>
+                                    </div>
+                                    <div className="flex flex-col gap-0.5 min-w-0">
+                                        <span className="font-body font-semibold text-on-surface text-sm truncate">{booking.resource?.name || `Resource #${booking.resource?.id || booking.resourceId}`}</span>
+                                        <span className="font-body text-xs text-on-surface-variant truncate">{booking.purpose}</span>
+                                        <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 mt-1">
+                                            <span className="inline-flex items-center gap-1 text-[11px] font-medium text-on-surface-variant">
+                                                <span className="material-symbols-outlined text-[13px]">calendar_today</span>
+                                                {booking.date} {booking.startTime ? booking.startTime.substring(0, 5) : ''}
+                                            </span>
+                                            <span className="inline-flex items-center gap-1 text-[11px] font-medium text-on-surface-variant">
+                                                <span className="material-symbols-outlined text-[13px]">schedule</span>
+                                                {booking.createdAt ? new Date(booking.createdAt).toISOString().substring(0, 16).replace('T', ' ') : 'N/A'}
+                                            </span>
                                         </div>
                                     </div>
-                                    <div className="col-span-3 flex items-center gap-3">
-                                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${booking.status === 'CANCELLED' || booking.status === 'REJECTED' ? 'bg-surface-container text-on-surface-variant/60' : 'bg-surface-container text-primary'}`}>
-                                            <span className="material-symbols-outlined text-[20px]">event_seat</span>
+                                </div>
+                                <div className="flex flex-wrap items-center gap-2 md:flex-nowrap md:gap-3">
+                                    <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full font-label text-xs font-semibold tracking-wide ${getStatusStyle(booking.status)}`}>
+                                        <span className={`w-1.5 h-1.5 rounded-full ${getStatusIconColor(booking.status)}`}></span>
+                                        {booking.status}
+                                    </span>
+                                    {booking.checkedIn ? (
+                                        <div className="flex flex-col gap-0.5">
+                                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full font-label text-xs font-semibold tracking-wide bg-green-100 text-green-700 w-fit">
+                                                <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>
+                                                Checked-In
+                                            </span>
+                                            <span className="font-body text-[10px] text-on-surface-variant">{formatCheckedInTime(booking.checkedInTime)}</span>
                                         </div>
-                                        <div className="flex flex-col">
-                                            <span className="font-body font-semibold text-on-surface text-sm">{booking.resource?.name || `Resource #${booking.resource?.id || booking.resourceId}`}</span>
-                                        </div>
-                                    </div>
-                                    <div className="col-span-3">
-                                        <span className="font-body text-on-surface text-sm line-clamp-1">{booking.purpose}</span>
-                                    </div>
-                                    <div className="col-span-2">
-                                        <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full font-label text-xs font-semibold tracking-wide ${getStatusStyle(booking.status)}`}>
-                                            <span className={`w-1.5 h-1.5 rounded-full ${getStatusIconColor(booking.status)}`}></span>
-                                            {booking.status}
+                                    ) : booking.status === 'APPROVED' ? (
+                                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full font-label text-xs font-semibold tracking-wide bg-blue-50 text-blue-600">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-blue-400"></span>
+                                            Not Checked-In
                                         </span>
-                                    </div>
-                                    <div className="col-span-2 flex items-center justify-end gap-2 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
+                                    ) : (
+                                        <span className="font-body text-xs text-on-surface-variant/40">-</span>
+                                    )}
+                                    <div className="flex items-center gap-2">
                                         {booking.status === 'PENDING' && !isAdmin() && (
-                                            <button 
+                                            <button
                                                 onClick={() => handleCancel(booking.id || booking.bookingId)}
                                                 className="text-xs font-body font-semibold text-error hover:bg-error-container/50 px-3 py-1.5 rounded-lg transition-colors">
                                                 Cancel
                                             </button>
                                         )}
+                                        {booking.status === 'APPROVED' && booking.qrCode && (
+                                            <button
+                                                onClick={() => setQrBooking(booking)}
+                                                className="text-xs font-body font-semibold text-primary hover:bg-primary/10 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1">
+                                                <span className="material-symbols-outlined text-[16px]">qr_code_2</span>
+                                                View QR
+                                            </button>
+                                        )}
                                     </div>
                                 </div>
-                            ))
-                        )}
-                    </div>
-                )}
-                
-                {/* Pagination Controls */}
-                {!loading && processedBookings.length > itemsPerPage && (
-                    <div className="flex items-center justify-between px-6 py-4 mt-2 border-t border-surface-container-highest">
-                        <div className="flex items-center gap-4">
-                            <span className="text-sm font-body text-on-surface-variant">
-                                Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, processedBookings.length)} of {processedBookings.length}
-                            </span>
-                            {processedBookings.length > 5 && (
-                                <button 
-                                    onClick={() => {
-                                        if (itemsPerPage === 5) {
-                                            setItemsPerPage(9999);
-                                            setCurrentPage(1);
-                                        } else {
-                                            setItemsPerPage(5);
-                                            setCurrentPage(1);
-                                        }
-                                    }}
-                                    className="text-xs font-body font-bold text-primary hover:bg-primary/5 px-2.5 py-1 rounded-lg border border-primary/20 transition-all active:scale-95"
-                                >
-                                    {itemsPerPage === 5 ? 'View All' : 'Show Less'}
-                                </button>
-                            )}
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <button 
-                                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                                disabled={currentPage === 1}
-                                className="px-3 py-1.5 rounded-lg text-sm font-medium font-body bg-surface-container hover:bg-surface-container-highest disabled:opacity-50 transition-colors"
-                            >
-                                Prev
-                            </button>
-                            <span className="text-sm font-body font-semibold px-3 py-1.5 bg-primary/10 text-primary rounded-lg">
-                                {currentPage}
-                            </span>
-                            <button 
-                                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                                disabled={currentPage === totalPages}
-                                className="px-3 py-1.5 rounded-lg text-sm font-medium font-body bg-surface-container hover:bg-surface-container-highest disabled:opacity-50 transition-colors"
-                            >
-                                Next
-                            </button>
-                        </div>
-                    </div>
+                            </div>
+                        ))
+                    )
                 )}
             </div>
+
+            {!loading && processedBookings.length > itemsPerPage && (
+                <div className="flex items-center justify-between px-2 py-4 mt-2">
+                    <div className="flex items-center gap-4">
+                        <span className="text-sm font-body text-on-surface-variant">
+                            Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, processedBookings.length)} of {processedBookings.length}
+                        </span>
+                        {processedBookings.length > 5 && (
+                            <button
+                                onClick={() => {
+                                    if (itemsPerPage === 5) {
+                                        setItemsPerPage(9999);
+                                        setCurrentPage(1);
+                                    } else {
+                                        setItemsPerPage(5);
+                                        setCurrentPage(1);
+                                    }
+                                }}
+                                className="text-xs font-body font-bold text-primary hover:bg-primary/5 px-2.5 py-1 rounded-lg border border-primary/20 transition-all active:scale-95"
+                            >
+                                {itemsPerPage === 5 ? 'View All' : 'Show Less'}
+                            </button>
+                        )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                            disabled={currentPage === 1}
+                            className="px-3 py-1.5 rounded-lg text-sm font-medium font-body bg-surface-container-low hover:bg-surface-container-highest disabled:opacity-50 transition-colors"
+                        >
+                            Prev
+                        </button>
+                        <span className="text-sm font-body font-semibold px-3 py-1.5 bg-primary/10 text-primary rounded-lg">
+                            {currentPage}
+                        </span>
+                        <button
+                            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                            disabled={currentPage === totalPages}
+                            className="px-3 py-1.5 rounded-lg text-sm font-medium font-body bg-surface-container-low hover:bg-surface-container-highest disabled:opacity-50 transition-colors"
+                        >
+                            Next
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {qrBooking && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setQrBooking(null)}>
+                    <div className="bg-surface rounded-2xl p-8 max-w-sm w-full shadow-2xl" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center justify-between mb-6">
+                            <h2 className="font-headline text-xl font-bold text-on-surface">Check-in QR Code</h2>
+                            <button onClick={() => setQrBooking(null)} className="text-on-surface-variant hover:text-on-surface transition-colors">
+                                <span className="material-symbols-outlined">close</span>
+                            </button>
+                        </div>
+                        <div className="flex flex-col items-center gap-4">
+                            <div className="bg-white p-4 rounded-xl">
+                                <QRCodeSVG
+                                    value={`${window.location.origin}/verify/${qrBooking.qrCode}`}
+                                    size={200}
+                                    level="M"
+                                />
+                            </div>
+                            <div className="text-center space-y-1">
+                                <p className="font-body text-sm text-on-surface font-semibold">
+                                    {qrBooking.resource?.name || `Resource #${qrBooking.resourceId}`}
+                                </p>
+                                <p className="font-body text-xs text-on-surface-variant">
+                                    {qrBooking.date} | {qrBooking.startTime?.substring(0, 5)} - {qrBooking.endTime?.substring(0, 5)}
+                                </p>
+                            </div>
+                            {qrBooking.checkedIn ? (
+                                <div className="flex items-center gap-2 bg-secondary/10 text-secondary px-4 py-2 rounded-lg">
+                                    <span className="material-symbols-outlined text-[18px]">check_circle</span>
+                                    <span className="font-body text-sm font-semibold">Checked In</span>
+                                </div>
+                            ) : (
+                                <div className="flex items-center gap-2 bg-tertiary-fixed-dim/10 text-on-tertiary-fixed px-4 py-2 rounded-lg">
+                                    <span className="material-symbols-outlined text-[18px]">qr_code_scanner</span>
+                                    <span className="font-body text-sm font-semibold">Scan to check in</span>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
