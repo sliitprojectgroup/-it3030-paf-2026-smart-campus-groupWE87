@@ -71,10 +71,18 @@ export default function CreateBooking() {
                 const booked = new Set();
                 bookings.forEach((booking) => {
                     if (booking.status !== 'REJECTED' && booking.status !== 'CANCELLED') {
-                        const startIdx = ALL_SLOTS.indexOf(booking.startTime.substring(0, 5));
-                        const endIdx = ALL_SLOTS.indexOf(booking.endTime.substring(0, 5));
+                        const startStr = booking.startTime.substring(0, 5);
+                        const endStr = booking.endTime.substring(0, 5);
 
-                        if (startIdx !== -1 && endIdx !== -1) {
+                        const startIdx = ALL_SLOTS.indexOf(startStr);
+                        let endIdx = ALL_SLOTS.indexOf(endStr);
+
+                        // Fix: handle out-of-range end times like "18:30"
+                        if (endIdx === -1) {
+                            endIdx = ALL_SLOTS.length;
+                        }
+
+                        if (startIdx !== -1) {
                             for (let i = startIdx; i < endIdx; i += 1) {
                                 booked.add(ALL_SLOTS[i]);
                             }
@@ -210,9 +218,7 @@ export default function CreateBooking() {
             setSuccess(true);
             notify({ message: 'Booking request submitted', type: 'created' });
             window.dispatchEvent(new Event('notifications:changed'));
-            setTimeout(() => {
-                navigate('/my-bookings');
-            }, 1500);
+            navigate('/my-bookings');
         } catch (err) {
             const message = getApiErrorMessage(err);
             const lowerMessage = message.toLowerCase();
