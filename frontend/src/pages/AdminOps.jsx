@@ -18,7 +18,7 @@ export default function AdminOps() {
     const [rejectReason, setRejectReason] = useState('');
 
     const [searchQuery, setSearchQuery] = useState('');
-    const [sortOption, setSortOption] = useState('booking_oldest');
+    const [sortOption, setSortOption] = useState('requested_newest');
 
     useEffect(() => {
         loadBookings();
@@ -167,12 +167,13 @@ export default function AdminOps() {
                             <select 
                                 value={sortOption}
                                 onChange={(e) => setSortOption(e.target.value)}
-                                className="bg-surface-container-highest border-none rounded-xl px-4 py-2 font-body text-sm text-on-surface focus:ring-2 focus:ring-primary outline-none w-full sm:w-auto"
+                                className="bg-surface-container-highest border-none rounded-xl px-4 pr-6 py-2 font-body text-sm text-on-surface focus:ring-2 focus:ring-primary outline-none w-full sm:w-auto"
                             >
-                                <option value="booking_newest">Booking Time (Newest)</option>
-                                <option value="booking_oldest">Booking Time (Oldest)</option>
                                 <option value="requested_newest">Requested Time (Newest)</option>
                                 <option value="requested_oldest">Requested Time (Oldest)</option>
+                                <option value="booking_newest">Booking Time (Newest)</option>
+                                <option value="booking_oldest">Booking Time (Oldest)</option>
+                                
                             </select>
                             <Link to="/admin/pending-bookings" className="text-sm font-medium font-body text-primary hover:underline whitespace-nowrap">
                                 View All
