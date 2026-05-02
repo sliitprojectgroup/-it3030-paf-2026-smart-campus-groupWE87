@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { getAllBookings, getNotifications, getUserBookings, getBookingStats } from '../services/api';
-import { getUser, getUserId } from '../utils/auth';
+import { getUser, getUserId, isAdmin } from '../utils/auth';
 
 export default function Dashboard() {
     const [bookings, setBookings] = useState([]);
@@ -62,10 +62,18 @@ export default function Dashboard() {
 
         const fetchDashboardData = async () => {
             try {
+                const bookingsPromise = isAdmin()
+            ? getAllBookings()
+            : getUserBookings(userId);
+
+        const statsPromise = isAdmin()
+            ? getBookingStats()
+            : Promise.resolve(null);
+
                 const [bookingData, notificationData, statsData] = await Promise.all([
-                    getAllBookings().catch(() => getUserBookings(userId)),
+                    bookingsPromise,
                     getNotifications(userId).catch(() => []),
-                    getBookingStats().catch(() => null)
+                    statsPromise
                 ]);
                 const safeBookings = Array.isArray(bookingData) ? bookingData : [];
                 setBookings(safeBookings);
@@ -87,6 +95,15 @@ export default function Dashboard() {
         1
     );
 
+    const upcomingBookings = [...bookings]
+        .filter((booking) => booking.status !== 'CANCELLED' && booking.date)
+        .sort((a, b) => {
+            const timeA = new Date(`${a.date}T${a.startTime || '00:00'}`);
+            const timeB = new Date(`${b.date}T${b.startTime || '00:00'}`);
+            return timeA - timeB;
+        })
+        .slice(0, 3);
+
     return (
         <div className="px-4 md:px-8 max-w-7xl mx-auto flex flex-col gap-10 pb-12">
             <section className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-primary to-primary-container p-6 md:p-8 text-on-primary shadow-sm mt-4 md:mt-6">
@@ -101,167 +118,209 @@ export default function Dashboard() {
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 <div className="lg:col-span-2 flex flex-col gap-8">
-                    <section>
-                        <h3 className="font-headline text-xl font-bold text-primary mb-6">Booking Analytics</h3>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                            <div className="bg-surface-container-lowest rounded-xl p-6 flex flex-col justify-between shadow-sm border border-outline-variant/20 hover:shadow-md transition-shadow">
-                                <div className="flex items-center justify-between mb-4">
-                                    <span className="font-label text-sm font-medium text-on-surface-variant">Total Bookings</span>
-                                    <div className="w-8 h-8 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center">
-                                        <span className="material-symbols-outlined text-[18px]">bar_chart</span>
-                                    </div>
-                                </div>
-                                <div className="font-headline text-4xl font-extrabold text-primary">{metrics.total}</div>
-                                <p className="font-body text-xs text-on-surface-variant mt-2">Overall reservations</p>
-                            </div>
-
-                            <div className="bg-surface-container-lowest rounded-xl p-6 flex flex-col justify-between shadow-sm border border-outline-variant/20 hover:shadow-md transition-shadow">
-                                <div className="flex items-center justify-between mb-4">
-                                    <span className="font-label text-sm font-medium text-on-surface-variant">Pending Requests</span>
-                                    <div className="w-8 h-8 rounded-full bg-tertiary-fixed-dim/20 text-on-tertiary-fixed flex items-center justify-center">
-                                        <span className="material-symbols-outlined text-[18px]">schedule</span>
-                                    </div>
-                                </div>
-                                <div className="font-headline text-4xl font-extrabold text-primary">{metrics.pending}</div>
-                                <p className="font-body text-xs text-on-surface-variant mt-2">Awaiting approval</p>
-                            </div>
-
-                            <div className="bg-surface-container-lowest rounded-xl p-6 flex flex-col justify-between shadow-sm border border-outline-variant/20 hover:shadow-md transition-shadow">
-                                <div className="flex items-center justify-between mb-4">
-                                    <span className="font-label text-sm font-medium text-on-surface-variant">Top Resource</span>
-                                    <div className="w-8 h-8 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center">
-                                        <span className="material-symbols-outlined text-[18px]">star</span>
-                                    </div>
-                                </div>
-                                <div className="font-headline text-2xl font-bold text-primary truncate" title={metrics.topResource}>{metrics.topResource}</div>
-                                <p className="font-body text-xs text-on-surface-variant mt-2">Most frequently booked</p>
-                            </div>
-
-                            <div className="bg-surface-container-lowest rounded-xl p-6 flex flex-col justify-between shadow-sm border border-outline-variant/20 hover:shadow-md transition-shadow">
-                                <div className="flex items-center justify-between mb-4">
-                                    <span className="font-label text-sm font-medium text-on-surface-variant">Peak Time</span>
-                                    <div className="w-8 h-8 rounded-full bg-error-container text-on-error-container flex items-center justify-center">
-                                        <span className="material-symbols-outlined text-[18px]">trending_up</span>
-                                    </div>
-                                </div>
-                                <div className="font-headline text-2xl font-bold text-primary">{metrics.peakTime}</div>
-                                <p className="font-body text-xs text-on-surface-variant mt-2">Approval Rate: {metrics.approvalRate}%</p>
-                            </div>
-
-                            <div className="bg-surface-container-lowest rounded-xl p-6 flex flex-col justify-between shadow-sm border border-green-200 hover:shadow-md transition-shadow">
-                                <div className="flex items-center justify-between mb-4">
-                                    <span className="font-label text-sm font-medium text-on-surface-variant">Checked-In Users</span>
-                                    <div className="w-8 h-8 rounded-full bg-green-100 text-green-700 flex items-center justify-center">
-                                        <span className="material-symbols-outlined text-[18px]">check_circle</span>
-                                    </div>
-                                </div>
-                                <div className="font-headline text-4xl font-extrabold text-green-600">{stats.checkedInCount}</div>
-                                <p className="font-body text-xs text-on-surface-variant mt-2">Successfully checked in</p>
-                            </div>
-
-                            <div className="bg-surface-container-lowest rounded-xl p-6 flex flex-col justify-between shadow-sm border border-red-200 hover:shadow-md transition-shadow">
-                                <div className="flex items-center justify-between mb-4">
-                                    <span className="font-label text-sm font-medium text-on-surface-variant">No-Shows</span>
-                                    <div className="w-8 h-8 rounded-full bg-red-100 text-red-600 flex items-center justify-center">
-                                        <span className="material-symbols-outlined text-[18px]">person_off</span>
-                                    </div>
-                                </div>
-                                <div className="font-headline text-4xl font-extrabold text-red-500">{stats.noShowCount}</div>
-                                <p className="font-body text-xs text-on-surface-variant mt-2">Approved but not checked in</p>
-                            </div>
-                        </div>
-                    </section>
-
-                    <section>
-                        <h3 className="font-headline text-xl font-bold text-primary mb-6">Check-in Insights</h3>
-                        <div className="bg-surface-container-lowest rounded-xl p-6 shadow-sm border border-outline-variant/20">
-                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-                                <div className="flex flex-col items-center gap-2 p-4 bg-green-50 rounded-xl">
-                                    <span className="material-symbols-outlined text-green-600 text-3xl">check_circle</span>
-                                    <span className="font-headline text-3xl font-extrabold text-green-700">{stats.checkedInCount}</span>
-                                    <span className="font-label text-xs font-semibold text-green-600 uppercase tracking-wide">Checked-In</span>
-                                </div>
-                                <div className="flex flex-col items-center gap-2 p-4 bg-red-50 rounded-xl">
-                                    <span className="material-symbols-outlined text-red-500 text-3xl">person_off</span>
-                                    <span className="font-headline text-3xl font-extrabold text-red-600">{stats.noShowCount}</span>
-                                    <span className="font-label text-xs font-semibold text-red-500 uppercase tracking-wide">No-Shows</span>
-                                </div>
-                                <div className="flex flex-col items-center gap-2 p-4 bg-blue-50 rounded-xl">
-                                    <span className="material-symbols-outlined text-blue-500 text-3xl">speed</span>
-                                    <span className="font-headline text-3xl font-extrabold text-blue-600">{stats.usageRate}%</span>
-                                    <span className="font-label text-xs font-semibold text-blue-500 uppercase tracking-wide">Usage Rate</span>
-                                </div>
-                            </div>
-                            <div className="mt-6">
-                                <div className="flex items-center justify-between mb-2">
-                                    <span className="font-body text-xs text-on-surface-variant">Check-in Utilization</span>
-                                    <span className="font-label text-xs font-semibold text-primary">{stats.usageRate}%</span>
-                                </div>
-                                <div className="w-full bg-surface-container-highest rounded-full h-3 overflow-hidden">
-                                    <div
-                                        className="bg-gradient-to-r from-blue-500 to-green-500 h-3 rounded-full transition-all duration-500"
-                                        style={{ width: `${Math.min(stats.usageRate, 100)}%` }}
-                                    ></div>
-                                </div>
-                                <div className="flex justify-between mt-1">
-                                    <span className="font-body text-[10px] text-on-surface-variant">0%</span>
-                                    <span className="font-body text-[10px] text-on-surface-variant">100%</span>
-                                </div>
-                            </div>
-                        </div>
-                    </section>
-
-                    <section>
-                        <h3 className="font-headline text-xl font-bold text-primary mb-6">Quick Actions</h3>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <Link to="/resources" className="relative overflow-hidden rounded-xl bg-surface-container-low hover:bg-surface-container transition-colors group text-left border border-transparent hover:border-outline-variant/20 p-6 flex flex-col gap-4">
-                                <div className="w-12 h-12 rounded-xl bg-surface-container-lowest shadow-sm flex items-center justify-center text-primary group-hover:scale-105 transition-transform">
-                                    <span className="material-symbols-outlined text-2xl">meeting_room</span>
-                                </div>
-                                <div>
-                                    <h4 className="font-headline text-lg font-bold text-primary mb-1">Book a Resource</h4>
-                                    <p className="font-body text-sm text-on-surface-variant">Reserve study spaces, labs, or equipment.</p>
-                                </div>
-                                <span className="material-symbols-outlined absolute -bottom-4 -right-4 text-7xl text-surface-container-highest/50 pointer-events-none group-hover:text-surface-container-highest transition-colors">meeting_room</span>
-                            </Link>
-
-                            <Link to="/report-issue" className="relative overflow-hidden rounded-xl bg-surface-container-low hover:bg-surface-container transition-colors group text-left border border-transparent hover:border-outline-variant/20 p-6 flex flex-col gap-4">
-                                <div className="w-12 h-12 rounded-xl bg-surface-container-lowest shadow-sm flex items-center justify-center text-primary group-hover:scale-105 transition-transform">
-                                    <span className="material-symbols-outlined text-2xl">report_problem</span>
-                                </div>
-                                <div>
-                                    <h4 className="font-headline text-lg font-bold text-primary mb-1">Report an Issue</h4>
-                                    <p className="font-body text-sm text-on-surface-variant">Log maintenance or IT requests.</p>
-                                </div>
-                                <span className="material-symbols-outlined absolute -bottom-4 -right-4 text-7xl text-surface-container-highest/50 pointer-events-none group-hover:text-surface-container-highest transition-colors">report_problem</span>
-                            </Link>
-                        </div>
-                    </section>
-
-                    <section>
-                        <h3 className="font-headline text-xl font-bold text-primary mb-6">Bookings Over Time</h3>
-                        <div className="bg-surface-container-lowest rounded-xl p-6 shadow-sm border border-outline-variant/20">
-                            <div className="flex items-end h-40 gap-2 w-full mt-4">
-                                {Array.from({ length: 24 }).map((_, hour) => {
-                                    const count = bookings.filter((booking) => booking.startTime && booking.startTime.startsWith(hour.toString().padStart(2, '0'))).length;
-                                    const heightPercentage = (count / maxHourlyBookings) * 100;
-
-                                    return (
-                                        <div key={hour} className="flex-1 flex flex-col items-center gap-2 group relative">
-                                            <div className="w-full bg-primary/20 rounded-t-sm" style={{ height: `${heightPercentage}%`, minHeight: count > 0 ? '4px' : '0' }}></div>
-                                            <span className="text-[10px] text-on-surface-variant">{hour}h</span>
-
-                                            {count > 0 && (
-                                                <div className="absolute -top-8 bg-surface-container text-on-surface text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10">
-                                                    {count} bookings
-                                                </div>
-                                            )}
+                    {isAdmin() ? (
+                        <>
+                            <section>
+                                <h3 className="font-headline text-xl font-bold text-primary mb-6">Booking Analytics</h3>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                    <div className="bg-surface-container-lowest rounded-xl p-6 flex flex-col justify-between shadow-sm border border-outline-variant/20 hover:shadow-md transition-shadow">
+                                        <div className="flex items-center justify-between mb-4">
+                                            <span className="font-label text-sm font-medium text-on-surface-variant">Total Bookings</span>
+                                            <div className="w-8 h-8 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center">
+                                                <span className="material-symbols-outlined text-[18px]">bar_chart</span>
+                                            </div>
                                         </div>
-                                    );
-                                })}
-                            </div>
-                        </div>
-                    </section>
+                                        <div className="font-headline text-4xl font-extrabold text-primary">{metrics.total}</div>
+                                        <p className="font-body text-xs text-on-surface-variant mt-2">Overall reservations</p>
+                                    </div>
+
+                                    <div className="bg-surface-container-lowest rounded-xl p-6 flex flex-col justify-between shadow-sm border border-outline-variant/20 hover:shadow-md transition-shadow">
+                                        <div className="flex items-center justify-between mb-4">
+                                            <span className="font-label text-sm font-medium text-on-surface-variant">Pending Requests</span>
+                                            <div className="w-8 h-8 rounded-full bg-tertiary-fixed-dim/20 text-on-tertiary-fixed flex items-center justify-center">
+                                                <span className="material-symbols-outlined text-[18px]">schedule</span>
+                                            </div>
+                                        </div>
+                                        <div className="font-headline text-4xl font-extrabold text-primary">{metrics.pending}</div>
+                                        <p className="font-body text-xs text-on-surface-variant mt-2">Awaiting approval</p>
+                                    </div>
+
+                                    <div className="bg-surface-container-lowest rounded-xl p-6 flex flex-col justify-between shadow-sm border border-outline-variant/20 hover:shadow-md transition-shadow">
+                                        <div className="flex items-center justify-between mb-4">
+                                            <span className="font-label text-sm font-medium text-on-surface-variant">Top Resource</span>
+                                            <div className="w-8 h-8 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center">
+                                                <span className="material-symbols-outlined text-[18px]">star</span>
+                                            </div>
+                                        </div>
+                                        <div className="font-headline text-2xl font-bold text-primary truncate" title={metrics.topResource}>{metrics.topResource}</div>
+                                        <p className="font-body text-xs text-on-surface-variant mt-2">Most frequently booked</p>
+                                    </div>
+
+                                    <div className="bg-surface-container-lowest rounded-xl p-6 flex flex-col justify-between shadow-sm border border-outline-variant/20 hover:shadow-md transition-shadow">
+                                        <div className="flex items-center justify-between mb-4">
+                                            <span className="font-label text-sm font-medium text-on-surface-variant">Peak Time</span>
+                                            <div className="w-8 h-8 rounded-full bg-error-container text-on-error-container flex items-center justify-center">
+                                                <span className="material-symbols-outlined text-[18px]">trending_up</span>
+                                            </div>
+                                        </div>
+                                        <div className="font-headline text-2xl font-bold text-primary">{metrics.peakTime}</div>
+                                        <p className="font-body text-xs text-on-surface-variant mt-2">Approval Rate: {metrics.approvalRate}%</p>
+                                    </div>
+
+                                    <div className="bg-surface-container-lowest rounded-xl p-6 flex flex-col justify-between shadow-sm border border-green-200 hover:shadow-md transition-shadow">
+                                        <div className="flex items-center justify-between mb-4">
+                                            <span className="font-label text-sm font-medium text-on-surface-variant">Checked-In Users</span>
+                                            <div className="w-8 h-8 rounded-full bg-green-100 text-green-700 flex items-center justify-center">
+                                                <span className="material-symbols-outlined text-[18px]">check_circle</span>
+                                            </div>
+                                        </div>
+                                        <div className="font-headline text-4xl font-extrabold text-green-600">{stats.checkedInCount}</div>
+                                        <p className="font-body text-xs text-on-surface-variant mt-2">Successfully checked in</p>
+                                    </div>
+
+                                    <div className="bg-surface-container-lowest rounded-xl p-6 flex flex-col justify-between shadow-sm border border-red-200 hover:shadow-md transition-shadow">
+                                        <div className="flex items-center justify-between mb-4">
+                                            <span className="font-label text-sm font-medium text-on-surface-variant">No-Shows</span>
+                                            <div className="w-8 h-8 rounded-full bg-red-100 text-red-600 flex items-center justify-center">
+                                                <span className="material-symbols-outlined text-[18px]">person_off</span>
+                                            </div>
+                                        </div>
+                                        <div className="font-headline text-4xl font-extrabold text-red-500">{stats.noShowCount}</div>
+                                        <p className="font-body text-xs text-on-surface-variant mt-2">Approved but not checked in</p>
+                                    </div>
+                                </div>
+                            </section>
+
+                            <section>
+                                <h3 className="font-headline text-xl font-bold text-primary mb-6">Check-in Insights</h3>
+                                <div className="bg-surface-container-lowest rounded-xl p-6 shadow-sm border border-outline-variant/20">
+                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                                        <div className="flex flex-col items-center gap-2 p-4 bg-green-50 rounded-xl">
+                                            <span className="material-symbols-outlined text-green-600 text-3xl">check_circle</span>
+                                            <span className="font-headline text-3xl font-extrabold text-green-700">{stats.checkedInCount}</span>
+                                            <span className="font-label text-xs font-semibold text-green-600 uppercase tracking-wide">Checked-In</span>
+                                        </div>
+                                        <div className="flex flex-col items-center gap-2 p-4 bg-red-50 rounded-xl">
+                                            <span className="material-symbols-outlined text-red-500 text-3xl">person_off</span>
+                                            <span className="font-headline text-3xl font-extrabold text-red-600">{stats.noShowCount}</span>
+                                            <span className="font-label text-xs font-semibold text-red-500 uppercase tracking-wide">No-Shows</span>
+                                        </div>
+                                        <div className="flex flex-col items-center gap-2 p-4 bg-blue-50 rounded-xl">
+                                            <span className="material-symbols-outlined text-blue-500 text-3xl">speed</span>
+                                            <span className="font-headline text-3xl font-extrabold text-blue-600">{stats.usageRate}%</span>
+                                            <span className="font-label text-xs font-semibold text-blue-500 uppercase tracking-wide">Usage Rate</span>
+                                        </div>
+                                    </div>
+                                    <div className="mt-6">
+                                        <div className="flex items-center justify-between mb-2">
+                                            <span className="font-body text-xs text-on-surface-variant">Check-in Utilization</span>
+                                            <span className="font-label text-xs font-semibold text-primary">{stats.usageRate}%</span>
+                                        </div>
+                                        <div className="w-full bg-surface-container-highest rounded-full h-3 overflow-hidden">
+                                            <div
+                                                className="bg-gradient-to-r from-blue-500 to-green-500 h-3 rounded-full transition-all duration-500"
+                                                style={{ width: `${Math.min(stats.usageRate, 100)}%` }}
+                                            ></div>
+                                        </div>
+                                        <div className="flex justify-between mt-1">
+                                            <span className="font-body text-[10px] text-on-surface-variant">0%</span>
+                                            <span className="font-body text-[10px] text-on-surface-variant">100%</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </section>
+
+                            <section>
+                                <h3 className="font-headline text-xl font-bold text-primary mb-6">Bookings Over Time</h3>
+                                <div className="bg-surface-container-lowest rounded-xl p-6 shadow-sm border border-outline-variant/20">
+                                    <div className="flex items-end h-40 gap-2 w-full mt-4">
+                                        {Array.from({ length: 24 }).map((_, hour) => {
+                                            const count = bookings.filter((booking) => booking.startTime && booking.startTime.startsWith(hour.toString().padStart(2, '0'))).length;
+                                            const heightPercentage = (count / maxHourlyBookings) * 100;
+
+                                            return (
+                                                <div key={hour} className="flex-1 flex flex-col items-center gap-2 group relative">
+                                                    <div className="w-full bg-primary/20 rounded-t-sm" style={{ height: `${heightPercentage}%`, minHeight: count > 0 ? '4px' : '0' }}></div>
+                                                    <span className="text-[10px] text-on-surface-variant">{hour}h</span>
+
+                                                    {count > 0 && (
+                                                        <div className="absolute -top-8 bg-surface-container text-on-surface text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10">
+                                                            {count} bookings
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            </section>
+                        </>
+                    ) : (
+                        <>
+                            <section className="bg-surface-container-lowest rounded-xl p-6 shadow-sm border border-outline-variant/20">
+                                <div className="flex items-center justify-between gap-4 mb-6">
+                                    <div>
+                                        <h3 className="font-headline text-xl font-bold text-primary">My Booking Snapshot</h3>
+                                        <p className="font-body text-sm text-on-surface-variant mt-1">A quick summary of your own reservations.</p>
+                                    </div>
+                                    <Link to="/my-bookings" className="text-sm font-medium font-body text-primary hover:underline whitespace-nowrap">
+                                        View My Bookings
+                                    </Link>
+                                </div>
+
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                    <div className="rounded-xl p-5 bg-primary/5 border border-primary/10">
+                                        <p className="font-body text-sm text-on-surface-variant">Total My Bookings</p>
+                                        <p className="font-headline text-3xl font-extrabold text-primary mt-3">{metrics.total}</p>
+                                    </div>
+                                    <div className="rounded-xl p-5 bg-tertiary-fixed-dim/10 border border-tertiary-fixed-dim/20">
+                                        <p className="font-body text-sm text-on-surface-variant">Pending Requests</p>
+                                        <p className="font-headline text-3xl font-extrabold text-primary mt-3">{metrics.pending}</p>
+                                    </div>
+                                    <div className="rounded-xl p-5 bg-secondary-container/20 border border-secondary/10">
+                                        <p className="font-body text-sm text-on-surface-variant">Approved Bookings</p>
+                                        <p className="font-headline text-3xl font-extrabold text-primary mt-3">{bookings.filter((booking) => booking.status === 'APPROVED').length}</p>
+                                    </div>
+                                </div>
+                            </section>
+
+                            <section>
+                                <h3 className="font-headline text-xl font-bold text-primary mb-6">Quick Actions</h3>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <Link to="/report-issue" className="relative overflow-hidden rounded-xl bg-surface-container-low hover:bg-surface-container transition-colors group text-left border border-transparent hover:border-outline-variant/20 p-6 flex flex-col gap-4">
+                                        <div className="w-12 h-12 rounded-xl bg-surface-container-lowest shadow-sm flex items-center justify-center text-primary group-hover:scale-105 transition-transform">
+                                            <span className="material-symbols-outlined text-2xl">report_problem</span>
+                                        </div>
+                                        <div>
+                                            <h4 className="font-headline text-lg font-bold text-primary mb-1">Report an Issue</h4>
+                                            <p className="font-body text-sm text-on-surface-variant">Log maintenance or IT requests.</p>
+                                        </div>
+                                        <span className="material-symbols-outlined absolute -bottom-4 -right-4 text-7xl text-surface-container-highest/50 pointer-events-none group-hover:text-surface-container-highest transition-colors">report_problem</span>
+                                    </Link>
+                                </div>
+                            </section>
+
+                            <section>
+                                <h3 className="font-headline text-xl font-bold text-primary mb-6">Upcoming Reservations</h3>
+                                <div className="bg-surface-container-lowest rounded-xl p-6 shadow-sm border border-outline-variant/20 space-y-4">
+                                    {upcomingBookings.length === 0 ? (
+                                        <p className="font-body text-sm text-on-surface-variant">You do not have any upcoming reservations yet.</p>
+                                    ) : upcomingBookings.map((booking) => (
+                                        <div key={booking.id || booking.bookingId} className="flex items-center justify-between gap-4 rounded-xl bg-surface-container-low p-4 border border-outline-variant/10">
+                                            <div className="min-w-0">
+                                                <p className="font-body font-semibold text-on-surface truncate">{booking.resource?.name || `Resource #${booking.resource?.id || booking.resourceId}`}</p>
+                                                <p className="font-body text-sm text-on-surface-variant truncate">{booking.purpose}</p>
+                                                <p className="font-body text-xs text-on-surface-variant mt-1">{booking.date} {booking.startTime ? booking.startTime.substring(0, 5) : ''}</p>
+                                            </div>
+                                            <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-primary/10 text-primary whitespace-nowrap">
+                                                {booking.status}
+                                            </span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </section>
+                        </>
+                    )}
                 </div>
 
                 <div className="lg:col-span-1">
