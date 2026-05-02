@@ -72,9 +72,9 @@ export default function Sidebar({ isOpen, onClose }) {
 
                 {!isAdmin() && (
                 <div className="mt-auto px-2 pb-4">
-                    <NavLink to="/book" onClick={() => onClose()} className="w-full flex items-center justify-center gap-2 bg-primary text-on-primary py-3 rounded-xl font-body font-medium text-sm hover:bg-primary-container transition-colors shadow-sm">
+                    <NavLink to="/resources" onClick={() => onClose()} className="w-full flex items-center justify-center gap-2 bg-primary text-on-primary py-3 rounded-xl font-body font-medium text-sm hover:bg-primary-container transition-colors shadow-sm">
                         <span className="material-symbols-outlined text-[18px]">add</span>
-                        New Request
+                        New Booking
                     </NavLink>
                 </div>
                 )}

@@ -11,7 +11,7 @@ export default function MyBookings() {
 
     const [currentPage, setCurrentPage] = useState(1);
     const [filterStatus, setFilterStatus] = useState('ALL');
-    const [sortBy, setSortBy] = useState('booking_newest');
+    const [sortBy, setSortBy] = useState('requested_newest');
     const [searchQuery, setSearchQuery] = useState('');
     const [itemsPerPage, setItemsPerPage] = useState(5);
     const [qrBooking, setQrBooking] = useState(null);
@@ -204,10 +204,10 @@ export default function MyBookings() {
                             onChange={(e) => setSortBy(e.target.value)}
                             className="w-full sm:w-auto bg-surface-container-highest border-none rounded-xl pl-4 pr-10 py-2.5 font-body text-sm text-on-surface focus:ring-2 focus:ring-primary outline-none"
                         >
-                            <option value="booking_newest">Booking Time (Newest)</option>
-                            <option value="booking_oldest">Booking Time (Oldest)</option>
                             <option value="requested_newest">Requested Time (Newest)</option>
                             <option value="requested_oldest">Requested Time (Oldest)</option>
+                            <option value="booking_newest">Booking Time (Newest)</option>
+                            <option value="booking_oldest">Booking Time (Oldest)</option>
                             <option value="status">Status (Pending First)</option>
                         </select>
                     </div>
