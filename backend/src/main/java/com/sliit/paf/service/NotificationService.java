@@ -23,7 +23,7 @@ public class NotificationService {
     // ─── Core creation helper ─────────────────────────────────────────────────
 
     public Notification createNotification(Long recipientId, String title, String message,
-                                           String type, Long referenceId, String referenceType) {
+            String type, Long referenceId, String referenceType) {
         Optional<User> recipientOptional = recipientId == null
                 ? Optional.empty()
                 : userRepository.findById(recipientId);

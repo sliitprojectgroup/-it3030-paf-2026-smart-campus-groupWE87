@@ -15,17 +15,17 @@ import java.util.Map;
 /**
  * Member 4 – Notification endpoints
  *
- *  GET    /api/notifications?userId={id}          → all notifications for user
- *  GET    /api/notifications/unread?userId={id}   → unread only
- *  GET    /api/notifications/count?userId={id}    → unread badge count
- *  PUT    /api/notifications/{id}/read?userId={uid} → mark single as read
- *  PUT    /api/notifications/read-all?userId={id}  → mark all as read
- *  DELETE /api/notifications/{id}?userId={uid}    → delete one notification
+ * GET /api/notifications?userId={id} → all notifications for user
+ * GET /api/notifications/unread?userId={id} → unread only
+ * GET /api/notifications/count?userId={id} → unread badge count
+ * PUT /api/notifications/{id}/read?userId={uid} → mark single as read
+ * PUT /api/notifications/read-all?userId={id} → mark all as read
+ * DELETE /api/notifications/{id}?userId={uid} → delete one notification
  */
 @RestController
 @RequestMapping("/api/notifications")
 @RequiredArgsConstructor
-@CrossOrigin(origins = {"http://localhost:5173", "http://127.0.0.1:5173"})
+@CrossOrigin(origins = "*")
 public class NotificationController {
 
     private final NotificationService notificationService;
@@ -50,10 +50,8 @@ public class NotificationController {
                         request.message(),
                         type,
                         request.referenceId(),
-                        referenceType
-                )),
-                HttpStatus.CREATED
-        );
+                        referenceType)),
+                HttpStatus.CREATED);
     }
 
     // GET /api/notifications?userId=5
@@ -80,7 +78,7 @@ public class NotificationController {
                 .toList());
     }
 
-    // GET /api/notifications/count?userId=5  → { "count": 3 }
+    // GET /api/notifications/count?userId=5 → { "count": 3 }
     @GetMapping("/count")
     public ResponseEntity<Map<String, Long>> getUnreadCount(@RequestParam Long userId) {
         return ResponseEntity.ok(Map.of("count", notificationService.countUnread(userId)));
@@ -89,7 +87,7 @@ public class NotificationController {
     // PUT /api/notifications/5/read?userId=12
     @PutMapping("/{id}/read")
     public ResponseEntity<NotificationResponse> markAsRead(@PathVariable Long id,
-                                                           @RequestParam Long userId) {
+            @RequestParam Long userId) {
         return ResponseEntity.ok(NotificationResponse.from(notificationService.markAsRead(id, userId)));
     }
 
@@ -109,7 +107,7 @@ public class NotificationController {
     // DELETE /api/notifications/5?userId=12
     @DeleteMapping(value = "/{id}", params = "userId")
     public ResponseEntity<Map<String, String>> delete(@PathVariable Long id,
-                                                       @RequestParam Long userId) {
+            @RequestParam Long userId) {
         notificationService.deleteNotification(id, userId);
         return ResponseEntity.ok(Map.of("message", "Notification deleted"));
     }
