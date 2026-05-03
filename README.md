@@ -1,4 +1,4 @@
-# Smart Campus Operations Hub site
+# Smart Campus Operations Hub
 
 A comprehensive platform to manage academic resources, facilitate seamless bookings, track IT/maintenance tickets, and manage notifications in a university campus setting.
 
