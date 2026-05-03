@@ -53,7 +53,7 @@ export default function PendingBookings() {
         try {
             await approveBooking(id);
             // Remove from the pending list once approved
-            setBookings(bookings.filter(b => b.id !== id));
+            setBookings(prev => prev.filter(b => String(b.id) !== String(id)));
             toast.success("Booking approved successfully");
         } catch (err) {
             toast.error(err.response?.data?.message || "Failed to approve booking");
@@ -74,7 +74,7 @@ export default function PendingBookings() {
         try {
             await rejectBooking(selectedBookingId, rejectReason);
             // Remove from the pending list once rejected
-            setBookings(bookings.filter(b => b.id !== selectedBookingId));
+            setBookings(prev => prev.filter(b => String(b.id) !== String(selectedBookingId)));
             setShowRejectModal(false);
             toast.success("Booking rejected");
         } catch (err) {

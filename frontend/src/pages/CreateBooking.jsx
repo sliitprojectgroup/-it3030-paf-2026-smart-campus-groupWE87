@@ -23,6 +23,7 @@ const ALL_SLOTS = [
     '17:00', '17:30', '18:00'
 ];
 
+
 export default function CreateBooking() {
     const { resourceId } = useParams();
     const navigate = useNavigate();
@@ -66,23 +67,29 @@ export default function CreateBooking() {
         async function fetchBookings() {
             if (!formData.date || !resourceId) return;
             try {
+                // Fetch existing bookings for selected date & resource
+                // Convert booking time ranges into slot indices and mark them as booked
+                // Only ACTIVE bookings are considered (ignore CANCELLED / REJECTED)
                 const bookings = await getBookingsByDateAndResource(resourceId, formData.date);
 
                 const booked = new Set();
                 bookings.forEach((booking) => {
                     if (booking.status !== 'REJECTED' && booking.status !== 'CANCELLED') {
+                        // Convert backend time (HH:mm:ss) -> slot format (HH:mm)
                         const startStr = booking.startTime.substring(0, 5);
                         const endStr = booking.endTime.substring(0, 5);
 
+                        // Find corresponding slot indexes
                         const startIdx = ALL_SLOTS.indexOf(startStr);
                         let endIdx = ALL_SLOTS.indexOf(endStr);
 
-                        // Fix: handle out-of-range end times like "18:30"
+                        // If end time is not in the predefined list, assume booking goes till the last slot
                         if (endIdx === -1) {
                             endIdx = ALL_SLOTS.length;
                         }
 
                         if (startIdx !== -1) {
+                            // Mark all slots between start (inclusive) and end (exclusive) as booked
                             for (let i = startIdx; i < endIdx; i += 1) {
                                 booked.add(ALL_SLOTS[i]);
                             }
@@ -106,10 +113,15 @@ export default function CreateBooking() {
     };
 
     const handleSlotClick = (slot) => {
+        // Handle user interaction when selecting time slots
+        // First click -> set startSlot
+        // Second click -> define endSlot (range selection)
         if (bookedSlots.includes(slot)) return;
 
         const slotIdx = ALL_SLOTS.indexOf(slot);
 
+        // First click OR reset previous selection
+        // Start a new selection
         if (!startSlot || (startSlot && endSlot)) {
             setStartSlot(slot);
             setEndSlot(null);
@@ -118,16 +130,20 @@ export default function CreateBooking() {
 
         const startIdx = ALL_SLOTS.indexOf(startSlot);
 
+        // If same slot clicked again -> deselect
         if (slotIdx === startIdx) {
             setStartSlot(null);
             return;
         }
 
+        // If user selects an earlier slot -> reset startSlot
         if (slotIdx < startIdx) {
             setStartSlot(slot);
             return;
         }
 
+        // Validate selected range: ensure no booked slots exist between start and end
+        // Loop checks all slots in range (inclusive)
         let hasBookedInBetween = false;
         for (let i = startIdx; i <= slotIdx; i += 1) {
             if (bookedSlots.includes(ALL_SLOTS[i])) {
@@ -136,55 +152,71 @@ export default function CreateBooking() {
             }
         }
 
+        // If any slot is already booked -> reject selection
         if (hasBookedInBetween) {
             setError('Cannot select continuous range containing booked slots.');
             return;
         }
 
+        // If valid -> set endSlot to complete selection
         setEndSlot(slot);
         setError(null);
     };
 
     const isSlotSelected = (slot) => {
+        // Determine whether a slot should be visually highlighted
+        // Used to show selected range in UI
         if (!startSlot) return false;
+
+        // Highlight only start slot if end not selected yet
         if (startSlot === slot && !endSlot) return true;
 
         if (startSlot && endSlot) {
             const slotIdx = ALL_SLOTS.indexOf(slot);
             const startIdx = ALL_SLOTS.indexOf(startSlot);
             const endIdx = ALL_SLOTS.indexOf(endSlot);
+
+            // Highlight all slots between start and end (inclusive)
             return slotIdx >= startIdx && slotIdx <= endIdx;
         }
         return false;
     };
 
     const handleSubmit = async (event) => {
+        // Handle booking submission
+        // Perform validation and send booking request to backend
         event.preventDefault();
         setError(null);
         setSuccess(false);
 
+        // Ensure resource is selected
         if (!resourceId) {
             setError('No resource selected to book.');
             return;
         }
 
+        // Ensure at least one slot is selected
         if (!startSlot) {
             setError('Please select a time slot.');
             return;
         }
 
+        // Validate attendee count (> 0)
         const attendeesNum = formData.attendees ? parseInt(formData.attendees) : 0;
         if (attendeesNum <= 0) {
             setError('Attendees must be greater than 0.');
             return;
         }
 
+        // Check capacity constraint before submitting
         if (resource && attendeesNum > resource.capacity) {
             setError(`Exceeds resource capacity. Maximum allowed is ${resource.capacity}`);
             toast.error('Exceeds resource capacity');
             return;
         }
 
+        // Convert selected slots into actual time range
+        // endSlot represents last selected slot -> actual end time is next slot
         const actualStartTime = startSlot;
         let actualEndTime;
         if (endSlot) {
@@ -204,6 +236,7 @@ export default function CreateBooking() {
                 return;
             }
 
+            // Send booking data to backend API
             const bookingData = {
                 userId,
                 resourceId: parseInt(resourceId),
@@ -220,6 +253,7 @@ export default function CreateBooking() {
             window.dispatchEvent(new Event('notifications:changed'));
             navigate('/my-bookings');
         } catch (err) {
+            // Handle conflict (409), capacity issues, and general errors
             const message = getApiErrorMessage(err);
             const lowerMessage = message.toLowerCase();
             setError(message);
@@ -297,6 +331,8 @@ export default function CreateBooking() {
 
                                         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
                                             {ALL_SLOTS.map((slot, index) => {
+                                                // Generate time slot buttons dynamically
+                                                // Each slot represents a 30-minute interval (current -> next slot)
                                                 const isBooked = bookedSlots.includes(slot);
                                                 const isSelected = isSlotSelected(slot);
                                                 const nextSlot = ALL_SLOTS[index + 1] || '18:30';
