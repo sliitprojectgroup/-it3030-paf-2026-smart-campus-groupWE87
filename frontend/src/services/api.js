@@ -45,6 +45,32 @@ export const getBookingStats = () => api.get('/bookings/stats');
 // Tickets
 export const createTicket = (data) => api.post('/tickets', data);
 export const getTickets = () => api.get('/tickets');
+export const getTicketById = (id) => api.get(`/tickets/${id}`);
+export const getTicketsByResource = (resourceId) => api.get(`/tickets/resource/${resourceId}`);
+export const getTicketsByUser = (userId) => api.get(`/tickets/user/${userId}`);
+export const getTicketsByStatus = (status) => api.get(`/tickets/status/${status}`);
+export const getTicketsAssignedToTechnician = (technicianId) => api.get(`/tickets/technician/${technicianId}`);
+export const updateTicket = (id, data) => api.put(`/tickets/${id}`, data);
+export const updateTicketStatus = (id, status) => api.put(`/tickets/${id}/status`, null, { params: { status } });
+export const assignTechnician = (id, technicianId) => api.put(`/tickets/${id}/assign`, null, { params: { technicianId } });
+export const rejectTicket = (id, reason) => api.put(`/tickets/${id}/reject`, null, { params: { reason } });
+
+// Ticket Comments
+export const addTicketComment = (ticketId, userId, data) => api.post(`/tickets/${ticketId}/comments`, data, { params: { userId } });
+export const getTicketComments = (ticketId) => api.get(`/tickets/${ticketId}/comments`);
+export const updateTicketComment = (commentId, userId, data) => api.put(`/tickets/comments/${commentId}`, data, { params: { userId } });
+export const deleteTicketComment = (commentId, userId) => api.delete(`/tickets/comments/${commentId}`, { params: { userId } });
+
+// Ticket Attachments
+export const uploadTicketAttachment = (ticketId, file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return api.post(`/tickets/${ticketId}/attachments`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+    });
+};
+export const getTicketAttachments = (ticketId) => api.get(`/tickets/${ticketId}/attachments`);
+export const deleteTicketAttachment = (attachmentId) => api.delete(`/tickets/attachments/${attachmentId}`);
 
 // Notifications
 export const getNotifications = (userId) => api.get('/notifications', { params: { userId } });
