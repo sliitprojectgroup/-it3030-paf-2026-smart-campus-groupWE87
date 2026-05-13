@@ -98,7 +98,7 @@ public class TicketService {
                 .orElseThrow(() -> new ResourceNotFoundException("Ticket not found with ID: " + id));
 
         String currentStatus = ticket.getStatus();
-        
+
         // Validate status transition
         validateStatusTransition(currentStatus, newStatus);
 
@@ -132,8 +132,7 @@ public class TicketService {
 
         if (!validTransition) {
             throw new ConflictException(
-                    String.format("Invalid status transition from %s to %s", currentStatus, newStatus)
-            );
+                    String.format("Invalid status transition from %s to %s", currentStatus, newStatus));
         }
     }
 
@@ -204,8 +203,8 @@ public class TicketService {
     }
 
     // Upload attachment
-    public TicketAttachment uploadAttachment(Long ticketId, String fileName, String filePath, 
-                                             String fileType, Long fileSize) {
+    public TicketAttachment uploadAttachment(Long ticketId, String fileName, String filePath,
+            String fileType, Long fileSize) {
         if (!ticketRepository.existsById(ticketId)) {
             throw new ResourceNotFoundException("Ticket not found with ID: " + ticketId);
         }
@@ -248,13 +247,11 @@ public class TicketService {
 
     // Helper method to validate image file type
     private boolean isValidImageType(String fileType) {
-        return fileType != null && (
-                fileType.equals("image/jpeg") ||
+        return fileType != null && (fileType.equals("image/jpeg") ||
                 fileType.equals("image/jpg") ||
                 fileType.equals("image/png") ||
                 fileType.equals("image/gif") ||
-                fileType.equals("image/webp")
-        );
+                fileType.equals("image/webp"));
     }
 
     // Convert to DTO response
@@ -288,8 +285,7 @@ public class TicketService {
                 attachment.getFileName(),
                 attachment.getFilePath(),
                 attachment.getFileType(),
-                attachment.getFileSize()
-        );
+                attachment.getFileSize());
     }
 
     private TicketCommentResponse convertCommentToResponse(TicketComment comment) {
@@ -298,7 +294,6 @@ public class TicketService {
                 comment.getUserId(),
                 comment.getContent(),
                 comment.getCreatedAt(),
-                comment.getUpdatedAt()
-        );
+                comment.getUpdatedAt());
     }
 }

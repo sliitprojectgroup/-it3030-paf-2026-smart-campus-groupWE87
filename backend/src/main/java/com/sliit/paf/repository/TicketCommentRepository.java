@@ -9,5 +9,6 @@ import java.util.List;
 @Repository
 public interface TicketCommentRepository extends JpaRepository<TicketComment, Long> {
     List<TicketComment> findByTicketId(Long ticketId);
+
     void deleteByIdAndUserId(Long id, Long userId);
 }

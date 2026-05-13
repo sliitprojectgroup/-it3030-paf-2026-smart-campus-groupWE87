@@ -96,9 +96,9 @@ public class TicketController {
 
     // Comments endpoints
     @PostMapping("/{id}/comments")
-    public ResponseEntity<TicketComment> addComment(@PathVariable Long id, 
-                                                     @RequestParam Long userId,
-                                                     @Valid @RequestBody AddCommentRequest request) {
+    public ResponseEntity<TicketComment> addComment(@PathVariable Long id,
+            @RequestParam Long userId,
+            @Valid @RequestBody AddCommentRequest request) {
         return new ResponseEntity<>(ticketService.addComment(id, userId, request.getContent()), HttpStatus.CREATED);
     }
 
@@ -109,8 +109,8 @@ public class TicketController {
 
     @PutMapping("/comments/{commentId}")
     public ResponseEntity<TicketComment> updateComment(@PathVariable Long commentId,
-                                                        @RequestParam Long userId,
-                                                        @Valid @RequestBody AddCommentRequest request) {
+            @RequestParam Long userId,
+            @Valid @RequestBody AddCommentRequest request) {
         return ResponseEntity.ok(ticketService.updateComment(commentId, userId, request.getContent()));
     }
 
@@ -123,7 +123,7 @@ public class TicketController {
     // Attachment endpoints
     @PostMapping("/{id}/attachments")
     public ResponseEntity<TicketAttachment> uploadAttachment(@PathVariable Long id,
-                                                             @RequestParam("file") MultipartFile file) {
+            @RequestParam("file") MultipartFile file) {
         try {
             // Create upload directory if not exists
             Path uploadPath = Paths.get(uploadDir);
@@ -131,8 +131,9 @@ public class TicketController {
 
             // Generate unique filename
             String originalFileName = file.getOriginalFilename();
-            String fileExtension = originalFileName != null ? 
-                    originalFileName.substring(originalFileName.lastIndexOf(".")) : "";
+            String fileExtension = originalFileName != null
+                    ? originalFileName.substring(originalFileName.lastIndexOf("."))
+                    : "";
             String uniqueFileName = UUID.randomUUID().toString() + fileExtension;
 
             // Save file
@@ -145,8 +146,7 @@ public class TicketController {
                     originalFileName,
                     filePath.toString(),
                     file.getContentType(),
-                    file.getSize()
-            );
+                    file.getSize());
             return new ResponseEntity<>(attachment, HttpStatus.CREATED);
         } catch (IOException e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
