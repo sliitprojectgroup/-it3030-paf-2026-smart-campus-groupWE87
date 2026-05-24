@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createTicket, uploadTicketAttachment, getResources } from '../services/api';
 import { getUser } from '../utils/auth';
+import { validateTicketForm, validateFileAttachments, formatFileSize } from '../utils/ticketValidation';
+import { showSuccessToast, showErrorToast } from '../utils/toast';
 
 export default function CreateTicket() {
     const navigate = useNavigate();
@@ -43,13 +45,20 @@ export default function CreateTicket() {
 
     const validateForm = () => {
         const newErrors = {};
-        if (!formData.resourceId) newErrors.resourceId = 'Resource is required';
-        if (!formData.category) newErrors.category = 'Category is required';
-        if (!formData.title) newErrors.title = 'Title is required';
-        if (!formData.description) newErrors.description = 'Description is required';
-        if (!formData.priority) newErrors.priority = 'Priority is required';
-        if (!formData.preferredContact) newErrors.preferredContact = 'Contact information is required';
-        if (attachments.length === 0) newErrors.attachments = 'At least one image is required';
+        
+        // Validate form fields
+        const formErrors = validateTicketForm(formData);
+        Object.assign(newErrors, formErrors);
+
+        // Validate attachments
+        if (attachments.length === 0) {
+            newErrors.attachments = 'At least one image is required';
+        } else {
+            const fileErrors = validateFileAttachments(attachments);
+            if (fileErrors.length > 0) {
+                newErrors.attachments = fileErrors[0];
+            }
+        }
         
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
@@ -80,31 +89,17 @@ export default function CreateTicket() {
             return;
         }
 
-        // Validate file types
-        const validFiles = files.filter(file => {
-            const isImage = file.type.startsWith('image/');
-            const isValidSize = file.size <= 5 * 1024 * 1024; // 5MB limit
-            
-            if (!isImage) {
-                setErrors(prev => ({
-                    ...prev,
-                    attachments: 'Only image files are allowed'
-                }));
-                return false;
-            }
-            
-            if (!isValidSize) {
-                setErrors(prev => ({
-                    ...prev,
-                    attachments: 'Each image must be less than 5MB'
-                }));
-                return false;
-            }
+        // Validate files
+        const fileErrors = validateFileAttachments([...attachments, ...files]);
+        if (fileErrors.length > 0) {
+            setErrors(prev => ({
+                ...prev,
+                attachments: fileErrors[0]
+            }));
+            return;
+        }
 
-            return true;
-        });
-
-        setAttachments(prev => [...prev, ...validFiles]);
+        setAttachments(prev => [...prev, ...files]);
         if (errors.attachments) {
             setErrors(prev => ({
                 ...prev,
@@ -121,6 +116,7 @@ export default function CreateTicket() {
         e.preventDefault();
         
         if (!validateForm()) {
+            showErrorToast('Please fix the form errors');
             return;
         }
 
@@ -144,15 +140,16 @@ export default function CreateTicket() {
                     await uploadTicketAttachment(ticketResponse.id, file);
                 } catch (err) {
                     console.error('Failed to upload file:', file.name, err);
+                    showErrorToast(`Failed to upload image: ${file.name}`);
                 }
             }
 
-            alert('Ticket created successfully');
+            showSuccessToast('Ticket created successfully!');
             navigate(`/tickets/${ticketResponse.id}`);
         } catch (err) {
             console.error('Failed to create ticket:', err);
             setErrors({ submit: 'Failed to create ticket. Please try again.' });
-            alert('Failed to create ticket. Please verify all inputs.');
+            showErrorToast('Failed to create ticket. Please verify all inputs.');
         } finally {
             setLoading(false);
         }
