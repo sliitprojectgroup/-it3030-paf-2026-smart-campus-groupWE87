@@ -42,9 +42,55 @@ export const verifyBooking = (qrCode) => api.get(`/bookings/verify/${qrCode}`);
 
 export const getBookingStats = () => api.get('/bookings/stats');
 
-// Tickets
+// Tickets - Basic CRUD
 export const createTicket = (data) => api.post('/tickets', data);
 export const getTickets = () => api.get('/tickets');
+export const getTicketById = (id) => api.get(`/tickets/${id}`);
+export const deleteTicket = (id) => api.delete(`/tickets/${id}`);
+
+// Tickets - Filtering
+export const getTicketsByResource = (resourceId) => api.get(`/tickets/resource/${resourceId}`);
+export const getTicketsByUser = (userId) => api.get(`/tickets/user/${userId}`);
+export const getTicketsByTechnician = (technicianId) => api.get(`/tickets/technician/${technicianId}`);
+export const getTicketsByStatus = (status) => api.get(`/tickets/status/${status}`);
+
+// Tickets - Status & Assignment
+export const assignTechnician = (ticketId, technicianId) => 
+    api.put(`/tickets/${ticketId}/assign`, null, { params: { technicianId } });
+
+export const updateTicketStatus = (ticketId, status, notes) => 
+    api.put(`/tickets/${ticketId}/status`, null, { params: { status, notes } });
+
+export const rejectTicket = (ticketId, reason) => 
+    api.put(`/tickets/${ticketId}/reject`, null, { params: { reason } });
+
+// Tickets - Attachments
+export const uploadAttachment = (ticketId, file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return api.post(`/tickets/${ticketId}/attachments`, formData, {
+        headers: {
+            'Content-Type': 'multipart/form-data',
+        },
+    });
+};
+
+export const getAttachments = (ticketId) => api.get(`/tickets/${ticketId}/attachments`);
+export const deleteAttachment = (attachmentId) => api.delete(`/tickets/attachments/${attachmentId}`);
+export const downloadAttachment = (attachmentId) => 
+    api.get(`/tickets/attachments/${attachmentId}/download`, { responseType: 'blob' });
+
+// Tickets - Comments
+export const addComment = (ticketId, data) => api.post(`/tickets/${ticketId}/comments`, data);
+export const getComments = (ticketId) => api.get(`/tickets/${ticketId}/comments`);
+export const updateComment = (commentId, content, userId) => 
+    api.put(`/tickets/comments/${commentId}`, null, { params: { content, userId } });
+
+export const deleteComment = (commentId, userId) => 
+    api.delete(`/tickets/comments/${commentId}`, { params: { userId } });
+
+export const deleteCommentAsAdmin = (commentId) => 
+    api.delete(`/tickets/comments/${commentId}/admin`);
 
 // Notifications
 export const getNotifications = (userId) => api.get('/notifications', { params: { userId } });
@@ -55,3 +101,4 @@ export const markAllNotificationsAsRead = (userId) => api.put('/notifications/re
 export const deleteNotification = (id, userId) => api.delete(`/notifications/${id}`, { params: { userId } });
 
 export default api;
+

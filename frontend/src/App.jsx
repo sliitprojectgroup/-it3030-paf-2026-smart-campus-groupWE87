@@ -9,6 +9,7 @@ import CreateBooking from './pages/CreateBooking';
 import MyBookings from './pages/MyBookings';
 import AdminOps from './pages/AdminOps';
 import TicketList from './pages/TicketList';
+import TicketDetail from './pages/TicketDetail';
 import CreateTicket from './pages/CreateTicket';
 import AdminResourceOps from './pages/AdminResourceOps';
 import Login from './pages/Login';
@@ -47,6 +48,7 @@ function App() {
                     <Route path="admin/pending-bookings" element={<ProtectedRoute adminOnly><PendingBookings /></ProtectedRoute>} />
                     <Route path="admin-resources" element={<ProtectedRoute adminOnly><AdminResourceOps /></ProtectedRoute>} />
                     <Route path="tickets" element={<TicketList />} />
+                    <Route path="tickets/:id" element={<TicketDetail />} />
                     <Route path="report-issue" element={<CreateTicket />} />
                     <Route path="notifications" element={<Notifications />} />
                     <Route path="settings/notifications" element={<NotificationSettings />} />

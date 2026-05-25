@@ -9,4 +9,12 @@ import java.util.List;
 @Repository
 public interface TicketRepository extends JpaRepository<Ticket, Long> {
     List<Ticket> findByResourceId(Long resourceId);
+
+    List<Ticket> findByCreatedBy(Long userId);
+
+    List<Ticket> findByAssignedTechnician(Long technicianId);
+
+    List<Ticket> findByStatus(String status);
+
+    List<Ticket> findByResourceIdAndStatus(Long resourceId, String status);
 }
